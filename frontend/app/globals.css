@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+:root {
+  --background: #071018;
+  --foreground: #e8f1f8;
+  --panel: #0d1b27;
+  --accent: #4da3ff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-panel: var(--panel);
+  --color-accent: var(--accent);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), sans-serif;
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: #0b1520;
+  font-family: inherit;
+}

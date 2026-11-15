@@ -1,0 +1,386 @@
+{
+  "matrix_shape": [
+    312,
+    12
+  ],
+  "feature_names": [
+    "amazon_Evap_tavg",
+    "amazon_Rainf_f_tavg",
+    "amazon_SoilMoi0_10cm_inst",
+    "arctic_SNOMAS",
+    "arctic_T2M",
+    "california_SoilMoi0_10cm_inst",
+    "mediterranean_Evap_tavg",
+    "mediterranean_Rainf_f_tavg",
+    "mediterranean_SoilMoi0_10cm_inst",
+    "mediterranean_T2M",
+    "sahel_Evap_tavg",
+    "sahel_Rainf_f_tavg"
+  ],
+  "start_month": "2000-01",
+  "end_month": "2025-12",
+  "training_months": 249,
+  "validation_months": 63,
+  "validation_start": "2020-10",
+  "train_windows": 238,
+  "validation_windows": 52,
+  "full_windows": 301,
+  "sequence_length": 12,
+  "stride": 1,
+  "scaler_fit": "training months only",
+  "scaler_format": "structured array: feature, mean, std",
+  "constant_features": [],
+  "epochs": 100,
+  "optimizer": "Adam",
+  "learning_rate": 0.001,
+  "seed": 42,
+  "best_epoch": 94,
+  "best_validation_loss": 0.16446490585803986,
+  "reloaded_validation_loss": 0.16446490585803986,
+  "device": "cpu",
+  "torch_version": "2.15.0",
+  "pandas_version": "2.2.3",
+  "numpy_version": "2.1.3",
+  "model_config": {
+    "n_features": 12,
+    "hidden_dim": 64,
+    "latent_dim": 16,
+    "n_layers": 2
+  },
+  "sources": {
+    "amazon_Evap_tavg": [
+      {
+        "file": "amazon_Evap_tavg.csv",
+        "Title": "Time Series, Area-Averaged of Evapotranspiration 3-hourly 0.25 deg. [GLDAS Model GLDAS_NOAH025_3H v2.1] (3-hourly)",
+        "User Bounding Box": "-74.875,-14.875,-45.125,4.875",
+        "Data Bounding Box": "-74.875,-14.875,-45.125,4.875",
+        "dataset_variable": "GLDAS_NOAH025_3H_2_1_Evap_tavg",
+        "raw_rows": 75975,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "7f0add269ce64f879fc36a1920840f16cbc4f3adf5b5bb0c9b1e0b05a63703b8"
+      },
+      {
+        "file": "g4.areaAvgTimeSeries.GLDAS_NOAH025_3H_2_1_Evap_tavg.20000101-20251231.74W_14S_45W_4N.csv",
+        "Title": "Time Series, Area-Averaged of Evapotranspiration 3-hourly 0.25 deg. [GLDAS Model GLDAS_NOAH025_3H v2.1] (3-hourly)",
+        "User Bounding Box": "-74.875,-14.875,-45.125,4.875",
+        "Data Bounding Box": "-74.875,-14.875,-45.125,4.875",
+        "dataset_variable": "GLDAS_NOAH025_3H_2_1_Evap_tavg",
+        "raw_rows": 75975,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "7f0add269ce64f879fc36a1920840f16cbc4f3adf5b5bb0c9b1e0b05a63703b8"
+      }
+    ],
+    "amazon_Rainf_f_tavg": [
+      {
+        "file": "amazon_Rainf_f_tavg.csv",
+        "Title": "Time Series, Area-Averaged of Total precipitation rate monthly 0.25 deg. [GLDAS Model (monthly)",
+        "User Bounding Box": "-75,-15,-45,5",
+        "Data Bounding Box": "-74.875,-14.875,-45.125,4.875",
+        "dataset_variable": "GLDAS_NOAH025_M_2_1_Rainf_f_tavg",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "882a46fc146c3b0a2e58d8742d63b29924a499fa6e6ebf0ac3201906e0793481"
+      },
+      {
+        "file": "g4.areaAvgTimeSeries.GLDAS_NOAH025_M_2_1_Rainf_f_tavg.20000101-20251231.75W_15S_45W_5N.csv",
+        "Title": "Time Series, Area-Averaged of Total precipitation rate monthly 0.25 deg. [GLDAS Model (monthly)",
+        "User Bounding Box": "-75,-15,-45,5",
+        "Data Bounding Box": "-74.875,-14.875,-45.125,4.875",
+        "dataset_variable": "GLDAS_NOAH025_M_2_1_Rainf_f_tavg",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "882a46fc146c3b0a2e58d8742d63b29924a499fa6e6ebf0ac3201906e0793481"
+      }
+    ],
+    "amazon_SoilMoi0_10cm_inst": [
+      {
+        "file": "amazon_SoilMoi0_10cm_inst.csv",
+        "Title": "Time Series, Area-Averaged of Soil moisture content (0 - 10 cm underground) monthly 0.25 deg. [GLDAS (monthly)",
+        "User Bounding Box": "-75,-15,-45,5",
+        "Data Bounding Box": "-74.875,-14.875,-45.125,4.875",
+        "dataset_variable": "GLDAS_NOAH025_M_2_1_SoilMoi0_10cm_inst",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "dfc3b2bb843eb94a282aa9305a1ac2a20188e80ef88a70e8ee9c1ac2c353ee81"
+      },
+      {
+        "file": "g4.areaAvgTimeSeries.GLDAS_NOAH025_M_2_1_SoilMoi0_10cm_inst.20000101-20251231.74W_14S_45W_4N (1).csv",
+        "Title": "Time Series, Area-Averaged of Soil moisture content (0 - 10 cm underground) monthly 0.25 deg. [GLDAS Model (monthly)",
+        "User Bounding Box": "-74.875,-14.875,-45.125,4.875",
+        "Data Bounding Box": "-74.875,-14.875,-45.125,4.875",
+        "dataset_variable": "GLDAS_NOAH025_M_2_1_SoilMoi0_10cm_inst",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "62ee8c064b2530e7f81914234074791d8512aa8fed6a2b1769e0f1cfceb9b00c"
+      },
+      {
+        "file": "g4.areaAvgTimeSeries.GLDAS_NOAH025_M_2_1_SoilMoi0_10cm_inst.20000101-20251231.74W_14S_45W_4N.csv",
+        "Title": "Time Series, Area-Averaged of Soil moisture content (0 - 10 cm underground) monthly 0.25 deg. [GLDAS Model (monthly)",
+        "User Bounding Box": "-74.875,-14.875,-45.125,4.875",
+        "Data Bounding Box": "-74.875,-14.875,-45.125,4.875",
+        "dataset_variable": "GLDAS_NOAH025_M_2_1_SoilMoi0_10cm_inst",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "62ee8c064b2530e7f81914234074791d8512aa8fed6a2b1769e0f1cfceb9b00c"
+      },
+      {
+        "file": "g4.areaAvgTimeSeries.GLDAS_NOAH025_M_2_1_SoilMoi0_10cm_inst.20000101-20251231.75W_15S_45W_5N.csv",
+        "Title": "Time Series, Area-Averaged of Soil moisture content (0 - 10 cm underground) monthly 0.25 deg. [GLDAS (monthly)",
+        "User Bounding Box": "-75,-15,-45,5",
+        "Data Bounding Box": "-74.875,-14.875,-45.125,4.875",
+        "dataset_variable": "GLDAS_NOAH025_M_2_1_SoilMoi0_10cm_inst",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "dfc3b2bb843eb94a282aa9305a1ac2a20188e80ef88a70e8ee9c1ac2c353ee81"
+      }
+    ],
+    "arctic_SNOMAS": [
+      {
+        "file": "arctic_SNOMAS.csv",
+        "Title": "Time Series, Area-Averaged of Total snow storage land monthly 0.5 x 0.625 deg. [MERRA-2 (monthly)",
+        "User Bounding Box": "-180,65,180,90",
+        "Data Bounding Box": "-180,65,179.375,90",
+        "dataset_variable": "M2TMNXLND_5_12_4_SNOMAS",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "867139511e3b518f60e83a098c496624dee4ea1c3abda73a3bfc5632eacb002d"
+      },
+      {
+        "file": "g4.areaAvgTimeSeries.M2TMNXLND_5_12_4_SNOMAS.20000101-20251231.180W_65N_180E_90N (1).csv",
+        "Title": "Time Series, Area-Averaged of Total snow storage land monthly 0.5 x 0.625 deg. [MERRA-2 (monthly)",
+        "User Bounding Box": "-180,65,180,90",
+        "Data Bounding Box": "-180,65,179.375,90",
+        "dataset_variable": "M2TMNXLND_5_12_4_SNOMAS",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "867139511e3b518f60e83a098c496624dee4ea1c3abda73a3bfc5632eacb002d"
+      },
+      {
+        "file": "g4.areaAvgTimeSeries.M2TMNXLND_5_12_4_SNOMAS.20000101-20251231.180W_65N_180E_90N (2).csv",
+        "Title": "Time Series, Area-Averaged of Total snow storage land monthly 0.5 x 0.625 deg. [MERRA-2 (monthly)",
+        "User Bounding Box": "-180,65,180,90",
+        "Data Bounding Box": "-180,65,179.375,90",
+        "dataset_variable": "M2TMNXLND_5_12_4_SNOMAS",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "867139511e3b518f60e83a098c496624dee4ea1c3abda73a3bfc5632eacb002d"
+      },
+      {
+        "file": "g4.areaAvgTimeSeries.M2TMNXLND_5_12_4_SNOMAS.20000101-20251231.180W_65N_180E_90N.csv",
+        "Title": "Time Series, Area-Averaged of Total snow storage land monthly 0.5 x 0.625 deg. [MERRA-2 (monthly)",
+        "User Bounding Box": "-180,65,180,90",
+        "Data Bounding Box": "-180,65,179.375,90",
+        "dataset_variable": "M2TMNXLND_5_12_4_SNOMAS",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "867139511e3b518f60e83a098c496624dee4ea1c3abda73a3bfc5632eacb002d"
+      }
+    ],
+    "arctic_T2M": [
+      {
+        "file": "arctic_T2M.csv",
+        "Title": "Time Series, Area-Averaged of 2-meter air temperature, time average hourly 0.5 x 0.625 deg. [MERRA-2 (hourly)",
+        "User Bounding Box": "-180,65,180,90",
+        "Data Bounding Box": "-180,65,179.375,90",
+        "dataset_variable": "M2T1NXSLV_5_12_4_T2M",
+        "raw_rows": 227928,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "2e27669eaec75752d4c32221b7843cd1061be20a02f79ff9e89dca72d409342b"
+      },
+      {
+        "file": "g4.areaAvgTimeSeries.M2T1NXSLV_5_12_4_T2M.20000101-20251231.180W_65N_180E_90N.csv",
+        "Title": "Time Series, Area-Averaged of 2-meter air temperature, time average hourly 0.5 x 0.625 deg. [MERRA-2 (hourly)",
+        "User Bounding Box": "-180,65,180,90",
+        "Data Bounding Box": "-180,65,179.375,90",
+        "dataset_variable": "M2T1NXSLV_5_12_4_T2M",
+        "raw_rows": 227928,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "2e27669eaec75752d4c32221b7843cd1061be20a02f79ff9e89dca72d409342b"
+      }
+    ],
+    "california_SoilMoi0_10cm_inst": [
+      {
+        "file": "california_SoilMoi0_10cm_inst.csv",
+        "Title": "Time Series, Area-Averaged of Soil moisture content (0 - 10 cm underground) monthly 0.25 deg. [GLDAS Model (monthly)",
+        "User Bounding Box": "-125,32,-114,42",
+        "Data Bounding Box": "-124.875,32.125,-114.125,41.875",
+        "dataset_variable": "GLDAS_NOAH025_M_2_1_SoilMoi0_10cm_inst",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "02417d1154ce20a22c67dc9b0bc371c54ce9e44e017b5e9d824b27cfbfe9cffe"
+      },
+      {
+        "file": "g4.areaAvgTimeSeries.GLDAS_NOAH025_M_2_1_SoilMoi0_10cm_inst.20000101-20251231.125W_32N_114W_42N.csv",
+        "Title": "Time Series, Area-Averaged of Soil moisture content (0 - 10 cm underground) monthly 0.25 deg. [GLDAS Model (monthly)",
+        "User Bounding Box": "-125,32,-114,42",
+        "Data Bounding Box": "-124.875,32.125,-114.125,41.875",
+        "dataset_variable": "GLDAS_NOAH025_M_2_1_SoilMoi0_10cm_inst",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "02417d1154ce20a22c67dc9b0bc371c54ce9e44e017b5e9d824b27cfbfe9cffe"
+      }
+    ],
+    "mediterranean_Evap_tavg": [
+      {
+        "file": "mediterranean_Evap_tavg.csv",
+        "Title": "Time Series, Area-Averaged of Evapotranspiration 3-hourly 0.25 deg. [GLDAS Model GLDAS_NOAH025_3H v2.1] (3-hourly)",
+        "User Bounding Box": "-9.875,30.125,39.875,45.875",
+        "Data Bounding Box": "-9.875,30.125,39.875,45.875",
+        "dataset_variable": "GLDAS_NOAH025_3H_2_1_Evap_tavg",
+        "raw_rows": 75975,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "31634120763ab24ea7eed84a7a3893dd970f429ced6bc163deae5c20201c185d"
+      },
+      {
+        "file": "g4.areaAvgTimeSeries.GLDAS_NOAH025_3H_2_1_Evap_tavg.20000101-20251231.9W_30N_39E_45N.csv",
+        "Title": "Time Series, Area-Averaged of Evapotranspiration 3-hourly 0.25 deg. [GLDAS Model GLDAS_NOAH025_3H v2.1] (3-hourly)",
+        "User Bounding Box": "-9.875,30.125,39.875,45.875",
+        "Data Bounding Box": "-9.875,30.125,39.875,45.875",
+        "dataset_variable": "GLDAS_NOAH025_3H_2_1_Evap_tavg",
+        "raw_rows": 75975,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "31634120763ab24ea7eed84a7a3893dd970f429ced6bc163deae5c20201c185d"
+      }
+    ],
+    "mediterranean_Rainf_f_tavg": [
+      {
+        "file": "mediterranean_Rainf_f_tavg.csv",
+        "Title": "Time Series, Area-Averaged of Total precipitation rate monthly 0.25 deg. [GLDAS Model (monthly)",
+        "User Bounding Box": "-10,30,40,46",
+        "Data Bounding Box": "-9.875,30.125,39.875,45.875",
+        "dataset_variable": "GLDAS_NOAH025_M_2_1_Rainf_f_tavg",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "602e199b74295589bacebbeab288c7e739a7af6de8a17b5e14bbf33263a206aa"
+      },
+      {
+        "file": "g4.areaAvgTimeSeries.GLDAS_NOAH025_M_2_1_Rainf_f_tavg.20000101-20251231.10W_30N_40E_46N.csv",
+        "Title": "Time Series, Area-Averaged of Total precipitation rate monthly 0.25 deg. [GLDAS Model (monthly)",
+        "User Bounding Box": "-10,30,40,46",
+        "Data Bounding Box": "-9.875,30.125,39.875,45.875",
+        "dataset_variable": "GLDAS_NOAH025_M_2_1_Rainf_f_tavg",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "602e199b74295589bacebbeab288c7e739a7af6de8a17b5e14bbf33263a206aa"
+      }
+    ],
+    "mediterranean_SoilMoi0_10cm_inst": [
+      {
+        "file": "mediterranean_SoilMoi0_10cm_inst.csv",
+        "Title": "Time Series, Area-Averaged of Soil moisture content (0 - 10 cm underground) monthly 0.25 deg. [GLDAS Model (monthly)",
+        "User Bounding Box": "-9.875,30.125,39.875,45.875",
+        "Data Bounding Box": "-9.875,30.125,39.875,45.875",
+        "dataset_variable": "GLDAS_NOAH025_M_2_1_SoilMoi0_10cm_inst",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "8825892c770095c5c160ef708bd233ec6d9a0703da228c8acc66937cd79be70b"
+      },
+      {
+        "file": "g4.areaAvgTimeSeries.GLDAS_NOAH025_M_2_1_SoilMoi0_10cm_inst.20000101-20251231.9W_30N_39E_45N.csv",
+        "Title": "Time Series, Area-Averaged of Soil moisture content (0 - 10 cm underground) monthly 0.25 deg. [GLDAS Model (monthly)",
+        "User Bounding Box": "-9.875,30.125,39.875,45.875",
+        "Data Bounding Box": "-9.875,30.125,39.875,45.875",
+        "dataset_variable": "GLDAS_NOAH025_M_2_1_SoilMoi0_10cm_inst",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "8825892c770095c5c160ef708bd233ec6d9a0703da228c8acc66937cd79be70b"
+      }
+    ],
+    "mediterranean_T2M": [
+      {
+        "file": "mediterranean_T2M.csv",
+        "Title": "Time Series, Area-Averaged of 2-meter air temperature monthly 0.5 x 0.625 (monthly)",
+        "User Bounding Box": "-5,30,40,45",
+        "Data Bounding Box": "-5,30,40,45",
+        "dataset_variable": "M2TMNXSLV_5_12_4_T2M",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "8e38caf9c3b0ae8a8f6dac3971bd1e68f3fff1f9838d324b4177c26c426c9829"
+      }
+    ],
+    "sahel_Evap_tavg": [
+      {
+        "file": "sahel_Evap_tavg.csv",
+        "Title": "Time Series, Area-Averaged of Total evapotranspiration monthly 0.1 deg. [FLDAS Model (monthly)",
+        "User Bounding Box": "-15,10,40,20",
+        "Data Bounding Box": "-14.95,10.05,39.95,19.95",
+        "dataset_variable": "FLDAS_NOAH01_C_GL_M_001_Evap_tavg",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "f14818e4b66af63ba7f534db3a3644a386162055ea41966edb4301846aa48784"
+      }
+    ],
+    "sahel_Rainf_f_tavg": [
+      {
+        "file": "sahel_Rainf_f_tavg.csv",
+        "Title": "Time Series, Area-Averaged of Total precipitation rate monthly 0.25 deg. [GLDAS Model (monthly)",
+        "User Bounding Box": "-20,10,30,20",
+        "Data Bounding Box": "-19.875,10.125,29.875,19.875",
+        "dataset_variable": "GLDAS_NOAH025_M_2_1_Rainf_f_tavg",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "0e1e8cade6dd5112a46f5889d6dbd2ec5261d8a7c2331d3df858386a23068f06"
+      },
+      {
+        "file": "g4.areaAvgTimeSeries.GLDAS_NOAH025_M_2_1_Rainf_f_tavg.20000101-20251231.20W_10N_30E_20N.csv",
+        "Title": "Time Series, Area-Averaged of Total precipitation rate monthly 0.25 deg. [GLDAS Model (monthly)",
+        "User Bounding Box": "-20,10,30,20",
+        "Data Bounding Box": "-19.875,10.125,29.875,19.875",
+        "dataset_variable": "GLDAS_NOAH025_M_2_1_Rainf_f_tavg",
+        "raw_rows": 312,
+        "missing_raw_values": 0,
+        "monthly_missing_values": 0,
+        "sha256": "0e1e8cade6dd5112a46f5889d6dbd2ec5261d8a7c2331d3df858386a23068f06"
+      }
+    ]
+  },
+  "skipped_csvs": [],
+  "score_definition": "Mean squared error across standardized features, averaged across overlapping windows",
+  "top_anomaly_months": [
+    {
+      "date": "2015-12",
+      "score": 0.9062163631121317
+    },
+    {
+      "date": "2025-02",
+      "score": 0.5555561726743524
+    },
+    {
+      "date": "2025-03",
+      "score": 0.5111806869506836
+    },
+    {
+      "date": "2010-02",
+      "score": 0.4840661436319351
+    },
+    {
+      "date": "2024-09",
+      "score": 0.45526416848103207
+    }
+  ]
+}

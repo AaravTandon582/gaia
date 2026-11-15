@@ -1,41 +1,75 @@
 # GAIA
 
-**Geospatial Autonomous Intelligence for Anomaly & Trend Discovery**
+Geospatial Autonomous Intelligence for Anomaly & Trend Discovery.
 
-Project structure for a planned Earth system analysis and causal discovery application.
-This repository contains empty placeholders only. No application code, dependencies,
-data, or trained models have been added. The Next.js frontend is not initialized yet.
+The local demo connects a Next.js/Leaflet dashboard to FastAPI scouts and
+Tigramite PCMCI using the NASA Giovanni CSVs in `backend/data/cache`.
 
-## Project structure
+## Start the demo
 
-```text
-gaia/
-├── backend/
-│   ├── agents/
-│   │   ├── __init__.py
-│   │   ├── scout.py              # ScoutAgent
-│   │   ├── orchestrator.py       # OrchestratorAgent
-│   │   └── models.py             # Discovery, Domain, SignalType
-│   ├── analysis/
-│   │   ├── __init__.py
-│   │   ├── trend.py              # Mann-Kendall, Sen's slope, deseasonalization
-│   │   ├── changepoint.py        # BOCPD
-│   │   ├── wavelet.py            # DWT/CWT decomposition
-│   │   ├── causal.py             # PCMCI and planned BOCPD-gated discovery
-│   │   ├── transfer_entropy.py
-│   │   └── physics.py            # Energy/water balance validation
-│   ├── data/
-│   │   ├── __init__.py
-│   │   ├── loader.py             # earthaccess and CSV fallback
-│   │   └── cache/                # Future pre-downloaded CSVs
-│   ├── ml/
-│   │   ├── __init__.py
-│   │   ├── autoencoder.py        # LSTM autoencoder
-│   │   └── saved_models/         # Future pre-trained .pt files
-│   ├── main.py                   # Future FastAPI app
-│   └── requirements.txt
-├── frontend/                     # Reserved for a Next.js app
-└── README.md
+Requirements: Python 3.11+ and Node 22.12+ (the launcher also tries an installed
+Node 22 through nvm). From this directory:
+
+```bash
+./scripts/dev.sh
 ```
 
-Empty directories contain `.gitkeep` files so Git preserves them.
+The launcher installs dependencies in `.venv` and `frontend/node_modules`, starts
+both servers, and stops them on Ctrl-C. Open
+**http://127.0.0.1:3000/dashboard**. Click the shaded **Amazon Basin** region
+(or its region button). Scouts screen the cached series, then a graph of the
+inferred links appears on the map. Click a graph edge or a link in the right
+panel to inspect lag, signed strength and p-value. The time-series selector shows
+raw monthly observations and source metadata.
+
+## What the demo computes
+
+- Five cached regions: Amazon, Arctic, Mediterranean, Sahel and California.
+- Four domain scouts run concurrently. A domain without cached variables reports
+  zero observations; there is currently no biosphere dataset.
+- Scouts flag a significant deseasonalized Mann–Kendall trend (`p < 0.05`) or a
+  monthly residual anomaly (`|z| >= 2.5`).
+- PCMCI receives monthly means with seasonal and linear trends removed, aligns
+  all flagged variables over their shared date range, and uses analytic ParCorr,
+  `tau_max=6`, `pc_alpha=0.05`, and `alpha_level=0.05`.
+- Directed lagged links include self-links; contemporaneous associations are
+  omitted. These are statistical candidates, not demonstrated physical causes.
+
+The app uses actual cached regional averages, not a fresh spatial query at the
+clicked point. Different source products can have slightly different coverage;
+inspect each series' source bounds in the detail panel. Dates select whole
+calendar months, with at least 24 available months required for screening.
+Missing months fail clearly instead of being silently filled or removed.
+
+## Configuration and API
+
+- `GET http://127.0.0.1:8000/health`
+- `GET http://127.0.0.1:8000/regions`
+- `WS ws://127.0.0.1:8000/ws/scan`
+
+Send `{"regions":["amazon"],"date_range":["2000-01-01","2025-12-31"]}` once per
+WebSocket connection. Receive status events followed by either a complete
+result with `links`/`discoveries`, or an error. Each connection then closes.
+
+The frontend defaults to its page hostname on port 8000. To override, copy
+`frontend/.env.example` to `frontend/.env.local` and set `NEXT_PUBLIC_API_URL`;
+restart/rebuild the frontend. Set backend `GAIA_ALLOWED_ORIGINS` to a comma-separated
+list when using origins other than localhost or 127.0.0.1 on port 3000.
+
+## Checks
+
+```bash
+.venv/bin/python -m pytest backend/agents/tests -q
+# With the backend running on 127.0.0.1:8000:
+cd frontend
+npm test
+npm run build
+```
+
+Frontend integration tests use real Leaflet click handling, D3, and the live
+backend in JSDOM. They cover graph rendering, edge selection, time series,
+invalid dates, retry, cancellation, and stale-result replacement. JSDOM supplies
+geometry because it has no layout engine; these tests do not verify visual
+layout or external map-tile loading in a real browser.
+
+The concrete scout/data contract is documented in `backend/agents/README.md`.
