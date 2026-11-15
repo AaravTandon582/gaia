@@ -36,7 +36,7 @@ minimum is a computational guard, not a statistical sample-size recommendation.
 No interpolation or missing-month compression is performed.
 
 `run_causal_discovery(discoveries)` returns dictionaries with `cause`, `effect`,
-`lag`, `strength`, raw `p_value`, and `corrected_p`. Node names are `region:variable`, lag is positive
+`lag`, `strength`, raw `p_value`, `corrected_p`, `te`, and `te_p`. Node names are `region:variable`, lag is positive
 months, and strength is the signed partial correlation. PCMCI uses analytic
 ParCorr, `tau_min=1`, `tau_max=6`, and `pc_alpha=0.2` for PC1 parent selection.
 Benjamini–Hochberg FDR is applied across all N × N × 6 lagged tests, including
@@ -47,6 +47,13 @@ Only directed lagged edges between distinct `region:variable` nodes are returned
 Same-variable links across different regions are retained. Contemporaneous
 associations are omitted. Tigramite indexes links as cause, effect, lag; see its
 [PCMCI documentation](https://jakobrunge.github.io/tigramite/#tigramite.pcmci.PCMCI).
+
+Only retained links run KSG transfer entropy on the same preprocessed anomalies,
+with each link's lag, history length 2 and k=5. `te` is in nats; `te_p` uses 200
+source circular shifts and the plus-one correction (seed 0). It is a bivariate
+diagnostic conditioned on target history, not the multivariate conditioning used
+by PCMCI; `te_p` is not FDR-adjusted and does not change the retained link set.
+Cancellation is checked between links and surrogate evaluations.
 
 Install `backend/requirements.txt` and run `uvicorn backend.main:app` from the
 repository root. For a configured app, connect to `/ws/scan` and send one request:

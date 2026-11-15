@@ -17,6 +17,7 @@ from tigramite.independence_tests.parcorr import ParCorr
 from tigramite.pcmci import PCMCI
 from .cancellation import check_cancelled
 from .preprocessing import preprocess_for_causal
+from ..analysis.transfer_entropy import transfer_entropy_significance
 
 
 class ScoutAgent(Protocol):
@@ -195,7 +196,11 @@ class OrchestratorAgent:
                     p_value = float(results["p_matrix"][cause, effect, lag])
                     if not np.isfinite(strength) or not np.isfinite(p_value):
                         raise ValueError("PCMCI produced nonfinite link statistics")
+                    te = transfer_entropy_significance(
+                        matrix[:, cause], matrix[:, effect], lag=lag,
+                        check_cancelled=check_cancelled,
+                    )
                     links.append(dict(cause=names[cause], effect=names[effect],
                                       lag=lag, strength=strength, p_value=p_value,
-                                      corrected_p=corrected_p))
+                                      corrected_p=corrected_p, **te))
         return links

@@ -46,6 +46,9 @@ def test_real_region_scan(region):
         assert 1 <= link["lag"] <= 6
         assert link["p_value"] <= 0.05
         assert link["p_value"] <= link["corrected_p"] < 0.05
+        assert np.isfinite(link["te"])
+        assert 1 / 201 <= link["te_p"] <= 1
+        assert link["te_p"] * 201 == pytest.approx(round(link["te_p"] * 201))
     json.dumps(result, allow_nan=False)
 
 

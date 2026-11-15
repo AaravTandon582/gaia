@@ -76,6 +76,14 @@ def test_failure_cancels_remaining_scouts():
 
 def test_alignment_deduplication_loader_and_link_direction(monkeypatch):
     captured = {}
+    te_calls = []
+
+    def estimate_te(source, target, *, lag, check_cancelled):
+        check_cancelled()
+        te_calls.append((source.copy(), target.copy(), lag))
+        return {"te": 0.12, "te_p": 1 / 201}
+
+    monkeypatch.setattr(module, "transfer_entropy_significance", estimate_te)
 
     class PCMCI(module.PCMCI):
         def __init__(self, dataframe, cond_ind_test, verbosity):
@@ -114,7 +122,12 @@ def test_alignment_deduplication_loader_and_link_direction(monkeypatch):
     ]))
     assert isinstance(captured["test"], module.ParCorr)
     assert links == [dict(cause="arctic:temperature", effect="arctic:rain", lag=3,
-                          strength=-0.7, p_value=0.001, corrected_p=0.024)]
+                          strength=-0.7, p_value=0.001, corrected_p=0.024,
+                          te=0.12, te_p=1 / 201)]
+    assert len(te_calls) == 1  # Raw-significant but FDR-rejected links never run TE.
+    np.testing.assert_array_equal(te_calls[0][0], captured["data"][:, 0])
+    np.testing.assert_array_equal(te_calls[0][1], captured["data"][:, 1])
+    assert te_calls[0][2] == 3
     json.dumps(links, allow_nan=False)
 
 

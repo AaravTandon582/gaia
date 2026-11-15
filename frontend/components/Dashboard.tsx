@@ -7,10 +7,18 @@ import type L from "leaflet";
 import { AgentStatus } from "@/components/AgentStatus";
 import CausalGraph from "@/components/CausalGraph";
 import { TimeSeriesChart } from "@/components/TimeSeriesChart";
+import { WaveletScalogram } from "@/components/WaveletScalogram";
 import { apiUrl, edgeId, nodeId, parseScanEvent, scanUrl, type CatalogRegion, type CausalLink, type ScanResult, type StatusEvent } from "@/lib/api";
 import { type RegionSelection } from "@/lib/region";
 
 const RegionMap = dynamic(() => import("@/components/RegionMap"), { ssr: false, loading: () => <div className="grid h-full place-items-center">Loading map…</div> });
+
+const DEMO_SCENARIOS = [
+  { label: "Amazon Water Cycle", regionId: "amazon", hasData: true },
+  { label: "Sahel Water Cycle", regionId: "sahel", hasData: true },
+  { label: "Arctic Teleconnections", regionId: "arctic", hasData: false },
+  { label: "Mediterranean Drying", regionId: "mediterranean", hasData: false },
+] as const;
 
 export function Dashboard() {
   const [catalog, setCatalog] = useState<CatalogRegion[]>([]);
@@ -18,6 +26,7 @@ export function Dashboard() {
   const [retry, setRetry] = useState(0);
   const [region, setRegion] = useState<RegionSelection | null>(null);
   const [activeRegion, setActiveRegion] = useState<CatalogRegion | null>(null);
+  const [demoRegion, setDemoRegion] = useState<string | null>(null);
   const [leafletMap, setLeafletMap] = useState<L.Map | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<CausalLink | null>(null);
   const [events, setEvents] = useState<StatusEvent[]>([]);
@@ -119,7 +128,18 @@ export function Dashboard() {
   return <div className="flex min-h-dvh flex-col lg:h-dvh">
     <header className="flex min-h-14 shrink-0 items-center justify-between gap-4 border-b border-white/10 px-4 py-3">
       <Link href="/" className="text-sm font-semibold tracking-[0.22em]">GAIA</Link>
-      <p className="text-right text-xs text-sky-100/60">Cached NASA observations · 2000–2025</p>
+      <p className="text-right text-xs text-sky-100/60 flex flex-col items-end justify-end gap-1.5 sm:flex-row sm:items-center">
+        {running ? (
+          <>
+            <span className="relative inline-block h-3 w-3">
+              <span className="animate-spin absolute inset-0 block h-3 w-3 rounded-full border-2 border-sky-500/30 border-t-sky-400"></span>
+            </span>
+            {phase}
+          </>
+        ) : (
+          "Cached NASA observations · 2000–2025"
+        )}
+      </p>
     </header>
     <div className="grid flex-1 lg:min-h-0 lg:grid-cols-[240px_minmax(0,1fr)_350px]">
       <AgentStatus events={events} phase={phase} />
@@ -128,6 +148,41 @@ export function Dashboard() {
           <h1 className="text-sm font-medium">Click a shaded region to start a scan</h1>
           <p className="mt-1 text-xs text-sky-100/55">Each scan uses the cached regional averages. Select a link to inspect its lag and strength.</p>
           {catalogError ? <div role="alert" className="mt-2 text-sm text-rose-300">{catalogError} <button className="underline" onClick={() => setRetry((value) => value + 1)}>Reconnect</button></div> : <div className="mt-3 flex flex-wrap gap-2" aria-label="Available regions">{catalog.map((item) => <button key={item.id} onClick={() => beginScan(item)} className={`rounded-full border px-3 py-1 text-xs ${activeRegion?.id === item.id ? "border-sky-400 bg-sky-400/20 text-sky-200" : "border-white/15 text-sky-100/70 hover:bg-white/10"}`}>{item.name}</button>)}</div>}
+          <div className="mt-3">
+            <p className="text-[11px] uppercase tracking-widest text-sky-200/60 mb-1">Demo scenarios</p>
+            <select
+              value={demoRegion ?? ""}
+              onChange={(event) => {
+                const id = event.target.value;
+                if (!id) return;
+                const item = catalog.find((region) => region.id === id);
+                if (!item) return;
+                const selection: RegionSelection = {
+                  lat: (item.bounds.south + item.bounds.north) / 2,
+                  lon: (item.bounds.west + item.bounds.east) / 2,
+                  bounds: item.bounds,
+                };
+                setDemoRegion(id);
+                beginScan(selection);
+              }}
+              className="w-full rounded border border-white/15 bg-slate-900 px-2 py-1.5 text-xs text-sky-100"
+            >
+              <option value="">Choose a demo scenario</option>
+              {DEMO_SCENARIOS.map((scenario) => {
+                const item = catalog.find((region) => region.id === scenario.regionId);
+                if (!item) return null;
+                return (
+                  <option
+                    key={scenario.regionId}
+                    value={scenario.regionId}
+                    disabled={!scenario.hasData}
+                  >
+                    {scenario.label}{!scenario.hasData ? " — no data yet" : ""}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
         </div>
         <div className="relative min-h-[380px] flex-1 lg:min-h-0">
           <RegionMap region={region} regions={catalog} onSelect={beginScan} onMapReady={setLeafletMap} />
@@ -147,6 +202,25 @@ export function Dashboard() {
           {running ? <button className="mt-3 rounded border border-white/20 px-4 py-2 text-sm" onClick={() => { disconnect(); setRunning(false); setEvents([]); setPhase("Scan cancelled"); }}>Cancel scan</button> : <button disabled={!activeRegion} className="mt-3 rounded bg-accent px-4 py-2 text-sm font-medium text-slate-950 disabled:opacity-40" onClick={() => activeRegion && beginScan(activeRegion)}>Run scan</button>}
           {error && <p role="alert" className="mt-3 rounded border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-200">{error}</p>}
         </section>
+        {running && !result && (
+          <section aria-label="Causal graph results" className="rounded-lg border border-white/10 p-3">
+            <h2 className="font-medium">Statistical associations</h2>
+            <ul className="mt-3 max-h-52 space-y-2 overflow-auto">
+              {[1, 2, 3].map((i) => (
+                <li key={i} className="w-full rounded border p-2 text-left text-xs border-white/10 bg-white/5 animate-pulse">
+                  <div className="h-3 bg-slate-800 rounded w-3/4 mb-1"></div>
+                  <div className="h-2 bg-slate-800 rounded w-1/2"></div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        {!running && !result && !catalogError && (
+          <div className="mt-3 flex flex-col items-center gap-2 text-sky-100/50">
+            <p className="text-sm">No scan results yet.</p>
+            <p className="text-[11px] text-center max-w-xs">Run a scan to see statistical associations here.</p>
+          </div>
+        )}
         {result && <section aria-label="Causal graph results" className="rounded-lg border border-white/10 p-3">
           <h2 className="font-medium">{result.links.length} statistical associations</h2>
           <p className="mt-1 text-xs text-sky-100/55">{result.method}<br />{result.preprocessing}</p>
@@ -179,6 +253,18 @@ export function Dashboard() {
                     n samples: {result.n_samples}
                   </>
                 )}
+                {selectedEdge.te != null && (
+                  <>
+                    <br />
+                    Transfer entropy: {selectedEdge.te.toPrecision(4)}
+                  </>
+                )}
+                {selectedEdge.te_p != null && (
+                  <>
+                    <br />
+                    TE p-value: {selectedEdge.te_p.toPrecision(4)}
+                  </>
+                )}
               </p>
               {causeTrend && (
                 <>
@@ -190,6 +276,30 @@ export function Dashboard() {
                       Sen's slope ({nameFor(selectedEdge.cause)}): {causeTrend.sen_slope.toFixed(4)} per month
                     </p>
                   )}
+                </>
+              )}
+              {causeTrend?.values?.length && (
+                <WaveletScalogram
+                  values={causeTrend.values}
+                  dates={causeTrend.dates}
+                  width={300}
+                  height={140}
+                  title={`Wavelet scalogram · ${nameFor(selectedEdge.cause)}`}
+                />
+              )}
+              {causeTrend && causeTrend.inputsAvailable === false && (
+                <p className="mt-1 text-xs text-sky-100/40">
+                  Data consistency check: inputs unavailable (runoff and storage not loaded)
+                </p>
+              )}
+              {causeTrend && causeTrend.inputsAvailable !== false && causeTrend.meanResidualMmPerMonth != null && (
+                <>
+                  <p className="mt-1 text-xs text-sky-100/70">
+                    Data consistency check: mean residual {causeTrend.meanResidualMmPerMonth.toFixed(2)} mm/month
+                  </p>
+                  <p className="mt-0 text-[10px] text-sky-100/45">
+                    Compares P, ET, runoff and storage change. Tests whether datasets agree, not whether a link is causal.
+                  </p>
                 </>
               )}
             </section>

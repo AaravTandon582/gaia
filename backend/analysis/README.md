@@ -10,6 +10,34 @@ The local Anaconda interpreter (`/opt/anaconda3/bin/python`) has these dependenc
 
 ## Interfaces
 
+- `validate_water_balance(precip, et, runoff, delta_storage)` returns
+  `mean_residual` (signed mean of P - ET - Q - dS), `mean_relative_error`
+  (mean absolute residual divided by absolute precipitation, as a fraction),
+  and a plain-English `interpretation`, without a pass/fail threshold.
+  All four physical inputs must cover the same region/intervals and use matching
+  units (all rates or all interval totals). `delta_storage` is a change, not a
+  storage stock. Do not use standardized causal anomalies for this calculation.
+  Zero-precipitation intervals remain in the mean residual but are excluded
+  from relative error; when all precipitation is zero, relative error is None.
+  None, empty arrays, or nonfinite observations return the literal string
+  `"inputs unavailable"`. No missing term is replaced with zero.
+  The current cache has P/ET for Amazon, Mediterranean, and Sahel, but no runoff
+  or complete storage-change series. Shallow soil moisture (Amazon,
+  Mediterranean, California) and Arctic snow mass are only partial storage
+  components. Consequently no real cached water-balance residual is computed.
+- `compute_transfer_entropy(source, target, lag=1, history_len=2, k=5)` estimates
+  conditional mutual information in nats using the KSG neighbor-count formula
+  and Chebyshev distance. For target time t, target history is t-1 through t-h,
+  and source history is t-lag through t-lag-h+1. Radius queries are batched;
+  marginal counts exclude self and use distances strictly below the joint
+  k-neighbor radius. Finite-sample estimates can be negative and are not clipped.
+  Inputs must be aligned finite anomalies; insufficient samples or zero joint
+  k-neighbor distances (repeated embeddings) raise ValueError.
+  `transfer_entropy_significance(...)` adds a one-sided `te_p` from exactly 200
+  nonzero circular source shifts, with replacement, using seed 0 by default:
+  `(1 + count(surrogate >= observed)) / 201`. The target stays fixed.
+  The causal pipeline supplies its existing preprocessed matrix only for
+  FDR-surviving links; TE is an additive diagnostic, not another link filter.
 - `analyze_trend(timeseries, dates, alpha=0.05)` returns a dictionary containing
   `deseasonalized`, `slope`, `p_value`, `r_squared`, `confidence_interval_95`,
   `mann_kendall` (complete test statistics), `mk_trend`, `mk_p`, `sens_slope`,
