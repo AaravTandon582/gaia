@@ -1,0 +1,87 @@
+{
+  "amazon": {
+    "n_samples": 312,
+    "n_variables": 3,
+    "names": [
+      "amazon:Rainf_f_tavg",
+      "amazon:Evap_tavg",
+      "amazon:SoilMoi0_10cm_inst"
+    ],
+    "links": [
+      {
+        "cause": "amazon:Rainf_f_tavg",
+        "effect": "amazon:Evap_tavg",
+        "lag": 1,
+        "strength": 0.3856669287983509,
+        "p_value": 5.710863238925572e-12,
+        "corrected_p": 1.027955383006603e-10
+      },
+      {
+        "cause": "amazon:Rainf_f_tavg",
+        "effect": "amazon:Evap_tavg",
+        "lag": 5,
+        "strength": 0.1595588241394613,
+        "p_value": 0.00593799246379864,
+        "corrected_p": 0.05344193217418776
+      },
+      {
+        "cause": "amazon:Rainf_f_tavg",
+        "effect": "amazon:SoilMoi0_10cm_inst",
+        "lag": 6,
+        "strength": 0.11486238569281487,
+        "p_value": 0.047584518527844524,
+        "corrected_p": 0.21413033337530038
+      },
+      {
+        "cause": "amazon:SoilMoi0_10cm_inst",
+        "effect": "amazon:Rainf_f_tavg",
+        "lag": 1,
+        "strength": 0.12100158220039735,
+        "p_value": 0.03682407398693304,
+        "corrected_p": 0.21050181648640753
+      },
+      {
+        "cause": "amazon:SoilMoi0_10cm_inst",
+        "effect": "amazon:Evap_tavg",
+        "lag": 3,
+        "strength": -0.14536773610363618,
+        "p_value": 0.012289102450353827,
+        "corrected_p": 0.0948016474741581
+      },
+      {
+        "cause": "amazon:SoilMoi0_10cm_inst",
+        "effect": "amazon:Evap_tavg",
+        "lag": 4,
+        "strength": -0.12594907938549021,
+        "p_value": 0.03000210229464407,
+        "corrected_p": 0.20251419048884747
+      },
+      {
+        "cause": "amazon:SoilMoi0_10cm_inst",
+        "effect": "amazon:Evap_tavg",
+        "lag": 5,
+        "strength": -0.1908588028553074,
+        "p_value": 0.0009471564753213017,
+        "corrected_p": 0.010229289933470059
+      }
+    ]
+  },
+  "sahel": {
+    "n_samples": 312,
+    "n_variables": 2,
+    "names": [
+      "sahel:Rainf_f_tavg",
+      "sahel:Evap_tavg"
+    ],
+    "links": [
+      {
+        "cause": "sahel:Rainf_f_tavg",
+        "effect": "sahel:Evap_tavg",
+        "lag": 1,
+        "strength": 0.273665437039511,
+        "p_value": 1.616926247310648e-06,
+        "corrected_p": 1.2935409978485184e-05
+      }
+    ]
+  }
+}

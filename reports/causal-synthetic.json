@@ -1,0 +1,35 @@
+{
+  "known_VAR": [
+    {
+      "cause": "test:a",
+      "effect": "test:b",
+      "lag": 2,
+      "strength": 0.5696742334292466,
+      "p_value": 2.030432785790897e-34,
+      "corrected_p": 1.0964337043270844e-32
+    },
+    {
+      "cause": "test:b",
+      "effect": "test:c",
+      "lag": 1,
+      "strength": -0.4007788081524604,
+      "p_value": 3.2832758427874674e-16,
+      "corrected_p": 5.9098965170174414e-15
+    }
+  ],
+  "VAR_null_counts": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    4,
+    0,
+    0,
+    0
+  ],
+  "VAR_null_median": 0.0,
+  "artifact_without_preprocessing": 6,
+  "artifact_with_preprocessing": 0
+}

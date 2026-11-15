@@ -77,19 +77,20 @@ def test_failure_cancels_remaining_scouts():
 def test_alignment_deduplication_loader_and_link_direction(monkeypatch):
     captured = {}
 
-    class PCMCI:
+    class PCMCI(module.PCMCI):
         def __init__(self, dataframe, cond_ind_test, verbosity):
             captured["data"] = dataframe.values[0]
             captured["test"] = cond_ind_test
 
         def run_pcmci(self, **kwargs):
-            assert kwargs == dict(tau_max=6, pc_alpha=0.05, alpha_level=0.05)
+            assert kwargs == dict(tau_min=1, tau_max=6, pc_alpha=0.2, alpha_level=0.05)
             graph = np.full((2, 2, 7), "", dtype="<U3")
             graph[0, 1, 3] = "-->"
             graph[0, 1, 0] = "o-o"
             p = np.ones((2, 2, 7))
             val = np.zeros_like(p)
-            p[0, 1, 3], val[0, 1, 3] = 0.01, -0.7
+            p[0, 1, 3], val[0, 1, 3] = 0.001, -0.7
+            p[1, 0, 2] = 0.01  # Raw-significant, but rejected by BH across 24 tests.
             return dict(graph=graph, p_matrix=p, val_matrix=val)
 
     monkeypatch.setattr(module, "PCMCI", PCMCI)
@@ -106,11 +107,45 @@ def test_alignment_deduplication_loader_and_link_direction(monkeypatch):
         first, first, dict(region="arctic", variable="rain"), {"flagged": False},
     ])
     assert len(loader_calls) == 1
-    np.testing.assert_array_equal(captured["data"], np.column_stack([np.arange(2, 60), np.arange(58) * 2]))
+    months = pd.date_range("2000-03-01", periods=58, freq="MS").month
+    np.testing.assert_allclose(captured["data"], np.column_stack([
+        module.preprocess_for_causal(np.arange(2, 60), months),
+        module.preprocess_for_causal(np.arange(58) * 2, months),
+    ]))
     assert isinstance(captured["test"], module.ParCorr)
     assert links == [dict(cause="arctic:temperature", effect="arctic:rain", lag=3,
-                          strength=-0.7, p_value=0.01)]
+                          strength=-0.7, p_value=0.001, corrected_p=0.024)]
     json.dumps(links, allow_nan=False)
+
+
+def test_self_links_removed_but_same_variable_across_regions_kept(monkeypatch):
+    class PCMCI(module.PCMCI):
+        def __init__(self, **kwargs):
+            pass
+
+        def run_pcmci(self, **kwargs):
+            graph = np.full((3, 3, 7), "", dtype="<U3")
+            graph[:, :, 1] = "-->"
+            graph[0, 0, 6] = "-->"  # Self-links are excluded at every lag.
+            p = np.ones(graph.shape)
+            p[graph == "-->"] = 0.001
+            return dict(graph=graph, p_matrix=p,
+                        val_matrix=np.full(graph.shape, 0.7))
+
+    monkeypatch.setattr(module, "PCMCI", PCMCI)
+    links = OrchestratorAgent().run_causal_discovery([
+        discovery("temperature", region="arctic"),
+        discovery("temperature", region="amazon"),
+        discovery("rain", region="amazon"),
+    ])
+    assert {(link["cause"], link["effect"], link["lag"]) for link in links} == {
+        ("arctic:temperature", "amazon:temperature", 1),
+        ("amazon:temperature", "arctic:temperature", 1),
+        ("arctic:temperature", "amazon:rain", 1),
+        ("amazon:rain", "arctic:temperature", 1),
+        ("amazon:temperature", "amazon:rain", 1),
+        ("amazon:rain", "amazon:temperature", 1),
+    }
 
 
 def test_real_pcmci_recovers_known_lag():
@@ -198,6 +233,9 @@ def test_websocket_streams_before_scan_finishes():
             assert result["type"] == "complete"
             assert result["discovery_count"] == 0
             assert result["links"] == result["discoveries"] == []
+            assert result["n_samples"] == result["n_variables"] == 0
+            assert result["tau_max"] == 6
+            assert result["fdr_applied"] is False  # No variables, no PCMCI/FDR call.
 
 
 @pytest.mark.parametrize("payload", [
@@ -248,6 +286,10 @@ def test_websocket_pipeline_results_and_errors(failure):
                 assert not any(event["type"] == "complete" for event in events)
             else:
                 assert events[-1]["discovery_count"] == 2
+                assert events[-1]["n_samples"] == 300
+                assert events[-1]["n_variables"] == 2
+                assert events[-1]["tau_max"] == 6
+                assert events[-1]["fdr_applied"] is True
                 assert any(link["cause"] == "arctic:cause" and
                            link["effect"] == "arctic:effect" and link["lag"] == 2
                            for link in events[-1]["links"])

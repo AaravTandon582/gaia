@@ -16,6 +16,7 @@ from tigramite import data_processing as pp
 from tigramite.independence_tests.parcorr import ParCorr
 from tigramite.pcmci import PCMCI
 from .cancellation import check_cancelled
+from .preprocessing import preprocess_for_causal
 
 
 class ScoutAgent(Protocol):
@@ -36,10 +37,15 @@ class OrchestratorAgent:
         *,
         status_callback: StatusCallback | None = None,
         series_loader: Callable[[Mapping[str, Any]], pd.Series] | None = None,
+        pc_alpha: float = 0.2,
     ):
+        if not np.isfinite(pc_alpha) or not 0 < pc_alpha < 1:
+            raise ValueError("pc_alpha must be between 0 and 1")
         self.scouts = list(scouts)
         self.status_callback = status_callback
         self.series_loader = series_loader
+        self.pc_alpha = pc_alpha
+        self.causal_metadata = dict(n_samples=0, n_variables=0, tau_max=self.tau_max, fdr_applied=False)
 
     async def _status(self, agent: str, status: str, **details) -> None:
         check_cancelled()
@@ -124,6 +130,7 @@ class OrchestratorAgent:
         operation is synchronous; async callers should use asyncio.to_thread.
         """
         check_cancelled()
+        self.causal_metadata = dict(n_samples=0, n_variables=0, tau_max=self.tau_max, fdr_applied=False)
         columns = {}
         for discovery in discoveries:
             check_cancelled()
@@ -146,12 +153,17 @@ class OrchestratorAgent:
         frame = pd.DataFrame(columns).reindex(pd.date_range(start, end, freq="MS"))
         if len(frame) < 2 * self.tau_max + 3:
             raise ValueError("PCMCI needs at least 15 overlapping monthly observations")
-        matrix = frame.to_numpy(dtype=float)
-        if not np.isfinite(matrix).all():
+        if not np.isfinite(frame.to_numpy(dtype=float)).all():
             raise ValueError("Missing observations within the shared monthly date range")
-        if (np.ptp(matrix, axis=0) == 0).any():
+        if (np.ptp(frame.to_numpy(dtype=float), axis=0) == 0).any():
             raise ValueError("PCMCI cannot analyze constant time series")
         names = list(frame.columns)
+        processed = []
+        for name in names:
+            check_cancelled()
+            processed.append(preprocess_for_causal(frame[name].to_numpy(), frame.index.month))
+        matrix = np.column_stack(processed)
+        self.causal_metadata.update(n_samples=matrix.shape[0], n_variables=matrix.shape[1])
         dataframe = pp.DataFrame(data=matrix, var_names=names)
         pcmci = PCMCI(
             dataframe=dataframe,
@@ -159,18 +171,31 @@ class OrchestratorAgent:
             verbosity=0,
         )
         check_cancelled()
-        results = pcmci.run_pcmci(tau_max=6, pc_alpha=0.05, alpha_level=0.05)
+        results = pcmci.run_pcmci(tau_min=1, tau_max=self.tau_max,
+                                  pc_alpha=self.pc_alpha, alpha_level=0.05)
         check_cancelled()
+        corrected = pcmci.get_corrected_pvalues(
+            p_matrix=results["p_matrix"], fdr_method="fdr_bh",
+            exclude_contemporaneous=True, tau_min=1, tau_max=self.tau_max,
+        )
+        self.causal_metadata["fdr_applied"] = True
         links = []
         for cause in range(len(names)):
             for effect in range(len(names)):
+                # Node identity includes both region and variable.
+                if names[cause] == names[effect]:
+                    continue
                 for lag in range(1, self.tau_max + 1):
-                    if results["graph"][cause, effect, lag] != "-->":
+                    corrected_p = float(corrected[cause, effect, lag])
+                    if not np.isfinite(corrected_p):
+                        raise ValueError("PCMCI produced nonfinite corrected p-values")
+                    if corrected_p >= 0.05:
                         continue
                     strength = float(results["val_matrix"][cause, effect, lag])
                     p_value = float(results["p_matrix"][cause, effect, lag])
                     if not np.isfinite(strength) or not np.isfinite(p_value):
                         raise ValueError("PCMCI produced nonfinite link statistics")
                     links.append(dict(cause=names[cause], effect=names[effect],
-                                      lag=lag, strength=strength, p_value=p_value))
+                                      lag=lag, strength=strength, p_value=p_value,
+                                      corrected_p=corrected_p))
         return links

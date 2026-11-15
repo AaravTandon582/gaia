@@ -1,0 +1,238 @@
+{
+  "amazon": {
+    "n_samples": 312,
+    "n_variables": 3,
+    "tau_max": 6,
+    "fdr_applied": true,
+    "links": [
+      {
+        "cause": "amazon:Rainf_f_tavg",
+        "effect": "amazon:Evap_tavg",
+        "lag": 1,
+        "strength": 0.3875130929697509,
+        "p_value": 5.693061777962803e-12,
+        "corrected_p": 1.0247511200333046e-10
+      },
+      {
+        "cause": "amazon:Rainf_f_tavg",
+        "effect": "amazon:Evap_tavg",
+        "lag": 5,
+        "strength": 0.1748125558653743,
+        "p_value": 0.002676202578741238,
+        "corrected_p": 0.028902987850405373
+      }
+    ]
+  },
+  "sahel": {
+    "n_samples": 312,
+    "n_variables": 2,
+    "tau_max": 6,
+    "fdr_applied": true,
+    "links": [
+      {
+        "cause": "sahel:Rainf_f_tavg",
+        "effect": "sahel:Evap_tavg",
+        "lag": 1,
+        "strength": 0.2746706820527888,
+        "p_value": 1.5368257346834516e-06,
+        "corrected_p": 1.2294605877467613e-05
+      }
+    ]
+  },
+  "amazon_shift_null": {
+    "seeds": "0..19",
+    "offset_range_inclusive": [
+      50,
+      350
+    ],
+    "variables": [
+      "amazon:Rainf_f_tavg",
+      "amazon:Evap_tavg",
+      "amazon:SoilMoi0_10cm_inst"
+    ],
+    "mean": 0.3,
+    "max": 2,
+    "trials": [
+      {
+        "seed": 0,
+        "offsets": [
+          306,
+          241,
+          203
+        ],
+        "cross_links": 1
+      },
+      {
+        "seed": 1,
+        "offsets": [
+          192,
+          204,
+          277
+        ],
+        "cross_links": 0
+      },
+      {
+        "seed": 2,
+        "offsets": [
+          302,
+          128,
+          82
+        ],
+        "cross_links": 0
+      },
+      {
+        "seed": 3,
+        "offsets": [
+          294,
+          75,
+          104
+        ],
+        "cross_links": 0
+      },
+      {
+        "seed": 4,
+        "offsets": [
+          268,
+          333,
+          315
+        ],
+        "cross_links": 0
+      },
+      {
+        "seed": 5,
+        "offsets": [
+          251,
+          292,
+          56
+        ],
+        "cross_links": 0
+      },
+      {
+        "seed": 6,
+        "offsets": [
+          183,
+          211,
+          205
+        ],
+        "cross_links": 0
+      },
+      {
+        "seed": 7,
+        "offsets": [
+          334,
+          238,
+          255
+        ],
+        "cross_links": 1
+      },
+      {
+        "seed": 8,
+        "offsets": [
+          266,
+          148,
+          120
+        ],
+        "cross_links": 0
+      },
+      {
+        "seed": 9,
+        "offsets": [
+          176,
+          311,
+          339
+        ],
+        "cross_links": 0
+      },
+      {
+        "seed": 10,
+        "offsets": [
+          283,
+          337,
+          129
+        ],
+        "cross_links": 0
+      },
+      {
+        "seed": 11,
+        "offsets": [
+          90,
+          88,
+          289
+        ],
+        "cross_links": 2
+      },
+      {
+        "seed": 12,
+        "offsets": [
+          234,
+          125,
+          342
+        ],
+        "cross_links": 1
+      },
+      {
+        "seed": 13,
+        "offsets": [
+          319,
+          310,
+          296
+        ],
+        "cross_links": 0
+      },
+      {
+        "seed": 14,
+        "offsets": [
+          95,
+          300,
+          246
+        ],
+        "cross_links": 0
+      },
+      {
+        "seed": 15,
+        "offsets": [
+          330,
+          258,
+          262
+        ],
+        "cross_links": 1
+      },
+      {
+        "seed": 16,
+        "offsets": [
+          212,
+          220,
+          297
+        ],
+        "cross_links": 0
+      },
+      {
+        "seed": 17,
+        "offsets": [
+          273,
+          304,
+          82
+        ],
+        "cross_links": 0
+      },
+      {
+        "seed": 18,
+        "offsets": [
+          318,
+          170,
+          114
+        ],
+        "cross_links": 0
+      },
+      {
+        "seed": 19,
+        "offsets": [
+          227,
+          176,
+          157
+        ],
+        "cross_links": 0
+      }
+    ]
+  }
+}

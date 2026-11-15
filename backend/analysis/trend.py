@@ -8,14 +8,14 @@ from statsmodels.tsa.seasonal import seasonal_decompose
 
 
 def analyze_trend(timeseries, dates, alpha=0.05):
-    """Return additive deseasonalization, OLS and original Mann-Kendall statistics.
+    """Return additive deseasonalization, OLS and Mann-Kendall statistics.
 
     At least 24 finite observations and one date per consecutive calendar month
     are required. Missing values/months are rejected rather than interpolated.
     Both OLS and Sen slopes are in input units per month. ``is_significant``
-    uses the two-sided Mann-Kendall test at ``alpha``; its original formulation
-    assumes independent observations (seasonal adjustment does not remove all
-    serial dependence). The 95% confidence interval is for the OLS slope.
+    uses the Hamed-Rao modified Mann-Kendall test at ``alpha`` on the raw monthly
+    series, which accounts for serial dependence instead of assuming independence.
+    The 95% confidence interval is for the OLS slope.
     """
     if np.iscomplexobj(timeseries):
         raise ValueError("timeseries must be real-valued")
@@ -46,13 +46,15 @@ def analyze_trend(timeseries, dates, alpha=0.05):
     # Avoid roundoff masquerading as a trend in exactly constant/seasonal data.
     tolerance = 32 * np.finfo(float).eps * max(1., np.max(np.abs(values)))
     if np.ptp(deseasonalized) <= tolerance:
+        # No trend is possible once seasonality is removed (constant/seasonal only).
         deseasonalized = np.full_like(values, deseasonalized.mean())
         slope, intercept, p_value, r_squared, stderr = 0., float(deseasonalized[0]), 1., 0., 0.
+        mk_result = mk.original_test(deseasonalized, alpha=alpha)
     else:
         regression = stats.linregress(np.arange(len(values), dtype=float), deseasonalized)
         slope, intercept = float(regression.slope), float(regression.intercept)
         p_value, r_squared, stderr = float(regression.pvalue), float(regression.rvalue**2), float(regression.stderr)
-    mk_result = mk.original_test(deseasonalized, alpha=alpha)
+        mk_result = mk.hamed_rao_modification_test(values, alpha=alpha)
     mann_kendall = {
         "trend": str(mk_result.trend), "h": bool(mk_result.h),
         "p": float(mk_result.p), "z": float(mk_result.z),

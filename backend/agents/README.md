@@ -1,6 +1,6 @@
 # Orchestration
 
-`OrchestratorAgent(scouts, status_callback=None, series_loader=None)` accepts
+`OrchestratorAgent(scouts, status_callback=None, series_loader=None, pc_alpha=0.2)` accepts
 objects implementing `async scan(regions, date_range) -> list[dict]`. The optional
 status callback is async. `await run_scan(regions, date_range)` runs all scouts
 with `asyncio.gather`, emits lifecycle events, and returns flattened discoveries.
@@ -9,8 +9,10 @@ A failed scout fails the scan and cancels unfinished scouts.
 The default app configures four domain scouts and reads curated NASA Giovanni
 exports from `backend/data/cache`. Scouts screen monthly data for a significant
 deseasonalized Mann–Kendall trend or a detrended monthly anomaly of at least 2.5
-standard deviations. Only flagged variables enter PCMCI, after seasonal and
-linear trend removal. Domains without cached variables return an empty result.
+standard deviations. Only flagged variables enter PCMCI. Their raw series are
+aligned, monthly climatology is subtracted, a linear trend is removed, and
+each residual series is standardized. Scout screening inputs stay unchanged.
+Domains without cached variables return an empty result.
 Custom scouts can still be injected through `create_app([scout, ...])`.
 
 Each discovery represents one flagged variable:
@@ -34,10 +36,15 @@ minimum is a computational guard, not a statistical sample-size recommendation.
 No interpolation or missing-month compression is performed.
 
 `run_causal_discovery(discoveries)` returns dictionaries with `cause`, `effect`,
-`lag`, `strength`, and `p_value`. Node names are `region:variable`, lag is positive
+`lag`, `strength`, raw `p_value`, and `corrected_p`. Node names are `region:variable`, lag is positive
 months, and strength is the signed partial correlation. PCMCI uses analytic
-ParCorr, `tau_max=6`, `pc_alpha=0.05`, and graph threshold `alpha_level=0.05`.
-Only directed lagged edges are returned, including self-links. Contemporaneous
+ParCorr, `tau_min=1`, `tau_max=6`, and `pc_alpha=0.2` for PC1 parent selection.
+Benjamini–Hochberg FDR is applied across all N × N × 6 lagged tests, including
+self-links; only corrected p-values strictly below 0.05 are retained. Self-links
+are suppressed after correction. Set `pc_alpha` on the orchestrator/create_app,
+or `GAIA_PCMCI_PC_ALPHA` for the default app, to configure parent selection.
+Only directed lagged edges between distinct `region:variable` nodes are returned.
+Same-variable links across different regions are retained. Contemporaneous
 associations are omitted. Tigramite indexes links as cause, effect, lag; see its
 [PCMCI documentation](https://jakobrunge.github.io/tigramite/#tigramite.pcmci.PCMCI).
 
@@ -53,6 +60,9 @@ and finish, then a `causal_started` status. The final message is
 `{type: "complete", discovery_count, links, discoveries, method, preprocessing}`;
 failures emit `type: "error"`. Discoveries contain raw dates/values, signal
 summaries, and source metadata; pandas series are excluded from JSON.
+The complete response also includes `n_samples` (aligned monthly rows before
+lag trimming), `n_variables` (flagged unique nodes), `tau_max`, and `fdr_applied`.
+For an empty variable set these counts are zero and `fdr_applied` is false.
 Each connection runs one scan and closes. Disconnecting cancels async scouts.
 PCMCI runs in a worker thread to keep the event loop responsive; a computation
 already running in that thread finishes even if its client disconnects. Cached

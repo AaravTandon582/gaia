@@ -66,3 +66,19 @@ def test_invalid_input_rejected(kind):
     if kind == "alpha": kwargs["alpha"] = 1
     with pytest.raises(ValueError):
         analyze_trend(values, dates, **kwargs)
+
+
+def test_mk_p_on_raw_series_is_not_fooled_by_white_noise():
+    """White noise has no trend, so the scout-stage Mann-Kendall p-value should
+    exceed 0.05 in most seeds. The test runs on the raw monthly series; a
+    smoothed/deseasonalized input can manufacture spurious significance from
+    serial dependence."""
+    rng = np.random.default_rng(7)
+    seeds = [int(value) for value in rng.integers(0, 10_000, 30)]
+    p_values = []
+    for seed in seeds:
+        series = np.random.default_rng(seed).standard_normal(120)
+        dates = pd.date_range("2000", periods=120, freq="MS")
+        result = analyze_trend(series, dates)
+        p_values.append(result["mk_p"])
+    assert sum(p > 0.05 for p in p_values) >= 25

@@ -114,6 +114,7 @@ export function Dashboard() {
   }, [catalog, disconnect, startDate, endDate]);
 
   const nameFor = (id: string) => result?.discoveries.find((item) => nodeId(item) === id)?.label ?? id;
+  const causeTrend = selectedEdge ? result?.discoveries.find((item) => nodeId(item) === selectedEdge.cause) : undefined;
   const fieldClass = "w-full rounded border border-white/15 bg-slate-900 px-2 py-1.5 text-xs text-sky-100";
   return <div className="flex min-h-dvh flex-col lg:h-dvh">
     <header className="flex min-h-14 shrink-0 items-center justify-between gap-4 border-b border-white/10 px-4 py-3">
@@ -132,7 +133,7 @@ export function Dashboard() {
           <RegionMap region={region} regions={catalog} onSelect={beginScan} onMapReady={setLeafletMap} />
           {result && <CausalGraph map={leafletMap} discoveries={result.discoveries} links={result.links} selectedEdge={selectedEdge} onEdgeSelect={setSelectedEdge} />}
         </div>
-        <p className="shrink-0 border-t border-white/10 px-4 py-2 text-xs text-sky-100/60">Blue links: positive · Pink: negative · Arrows: cause → effect · Loops: self-links</p>
+        <p className="shrink-0 border-t border-white/10 px-4 py-2 text-xs text-sky-100/60">Blue links: positive · Pink: negative · Arrows: cause → effect</p>
       </main>
       <aside className="flex flex-col gap-4 overflow-auto bg-panel p-4 lg:min-h-0">
         <section>
@@ -147,12 +148,56 @@ export function Dashboard() {
           {error && <p role="alert" className="mt-3 rounded border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-200">{error}</p>}
         </section>
         {result && <section aria-label="Causal graph results" className="rounded-lg border border-white/10 p-3">
-          <h2 className="font-medium">{result.links.length} causal links</h2>
+          <h2 className="font-medium">{result.links.length} statistical associations</h2>
           <p className="mt-1 text-xs text-sky-100/55">{result.method}<br />{result.preprocessing}</p>
-          {result.links.length === 0 ? <p className="mt-3 text-sm text-sky-100/70">No significant lagged links in this scan.</p> : <ul className="mt-3 max-h-52 space-y-2 overflow-auto">{[...result.links].sort((a, b) => Number(a.cause === a.effect) - Number(b.cause === b.effect) || Math.abs(b.strength) - Math.abs(a.strength)).map((edge) => <li key={edgeId(edge)}><button onClick={() => setSelectedEdge(edge)} className={`w-full rounded border p-2 text-left text-xs ${selectedEdge && edgeId(selectedEdge) === edgeId(edge) ? "border-amber-400 bg-amber-400/10" : "border-white/10 hover:bg-white/5"}`}>{nameFor(edge.cause)} → {nameFor(edge.effect)}<span className="mt-1 block text-sky-100/50">{edge.lag} months · r {edge.strength.toFixed(3)} · p {edge.p_value.toPrecision(2)}</span></button></li>)}</ul>}
+          {result.links.length === 0 ? (
+            <div className="mt-3 flex flex-col items-center gap-2 text-sky-100/70">
+              <p className="text-sm">No significant lagged links in this scan.</p>
+              <p className="text-[11px] leading-relaxed text-center max-w-xs">Try another region or date range to search for lagged statistical associations.</p>
+            </div>
+          ) : <ul className="mt-3 max-h-52 space-y-2 overflow-auto">{[...result.links].sort((a, b) => Number(a.cause === a.effect) - Number(b.cause === b.effect) || Math.abs(b.strength) - Math.abs(a.strength)).map((edge) => <li key={edgeId(edge)}><button onClick={() => setSelectedEdge(edge)} className={`w-full rounded border p-2 text-left text-xs ${selectedEdge && edgeId(selectedEdge) === edgeId(edge) ? "border-amber-400 bg-amber-400/10" : "border-white/10 hover:bg-white/5"}`}>{nameFor(edge.cause)} → {nameFor(edge.effect)}<span className="mt-1 block text-sky-100/50">{edge.lag} months · r {edge.strength.toFixed(3)} · p {edge.p_value.toPrecision(2)}</span></button></li>)}</ul>}
           <p className="mt-3 text-[11px] text-sky-100/45">Statistical candidate links under PCMCI assumptions; not proof of physical causation.</p>
         </section>}
-        {selectedEdge && <section aria-label="Selected causal link" className="rounded-lg border border-amber-400/40 p-3 text-sm"><h2 className="text-amber-200">Selected causal link</h2><p className="mt-2">{nameFor(selectedEdge.cause)} → {nameFor(selectedEdge.effect)}</p><p className="mt-2 text-xs text-sky-100/70">Lag: {selectedEdge.lag} months<br />Strength: {selectedEdge.strength.toFixed(4)}<br />p-value: {selectedEdge.p_value.toPrecision(4)}</p></section>}
+        {selectedEdge && (
+          <>
+            <section aria-label="Selected statistical association" className="rounded-lg border border-amber-400/40 p-3 text-sm">
+              <h2 className="text-amber-200">Selected statistical association</h2>
+              <p className="mt-2">{nameFor(selectedEdge.cause)} → {nameFor(selectedEdge.effect)}</p>
+              <p className="mt-2 text-xs text-sky-100/70">
+                Lag: {selectedEdge.lag} months<br />
+                Strength: {selectedEdge.strength.toFixed(4)}<br />
+                p-value: {selectedEdge.p_value.toPrecision(4)}
+                {selectedEdge.corrected_p != null && (
+                  <>
+                    <br />
+                    FDR-adjusted p: {selectedEdge.corrected_p.toPrecision(4)}
+                  </>
+                )}
+                {result?.n_samples != null && (
+                  <>
+                    <br />
+                    n samples: {result.n_samples}
+                  </>
+                )}
+              </p>
+              {causeTrend && (
+                <>
+                  <p className="mt-1 text-xs text-sky-100/70">
+                    Mann-Kendall p ({nameFor(selectedEdge.cause)}): {causeTrend.trend_p.toPrecision(3)}
+                  </p>
+                  {causeTrend.sen_slope != null && (
+                    <p className="mt-1 text-xs text-sky-100/70">
+                      Sen's slope ({nameFor(selectedEdge.cause)}): {causeTrend.sen_slope.toFixed(4)} per month
+                    </p>
+                  )}
+                </>
+              )}
+            </section>
+            <p className="mt-3 text-[11px] text-sky-100/45">
+              Association from lagged partial correlation after seasonal and trend removal; not proof of causation.
+            </p>
+          </>
+        )}
         <TimeSeriesChart key={activeRegion?.id ?? "empty"} discoveries={result?.discoveries ?? []} />
       </aside>
     </div>

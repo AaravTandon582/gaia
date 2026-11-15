@@ -3,7 +3,6 @@
 import asyncio
 
 import numpy as np
-import pandas as pd
 from scipy.signal import detrend
 
 from ..analysis.trend import analyze_trend
@@ -43,13 +42,14 @@ class ScoutAgent:
                     region=region, variable=variable, label=label, domain=domain,
                     lat=location["lat"], lon=location["lon"], unit=unit,
                     region_name=location["name"], flagged=flagged,
-                    trend_p=float(trend["mk_p"]), peak_anomaly_z=peak_z,
+                    trend_p=float(trend["mk_p"]), sen_slope=float(trend["sens_slope"]),
+                    peak_anomaly_z=peak_z,
                     reason="Significant trend" if trend["is_significant"] else
                            "Monthly anomaly" if flagged else "No signal flagged",
                     dates=series.index.strftime("%Y-%m-%d").tolist(),
                     values=series.to_list(),
-                    # PCMCI sees deseasonalized, detrended data; charts show raw observations.
-                    timeseries=pd.Series(residual, index=series.index),
+                    # Causal preprocessing happens after alignment, independently of screening.
+                    timeseries=series.copy(),
                     **metadata,
                 ))
         check_cancelled()

@@ -27,7 +27,13 @@ def test_real_region_scan(region):
     result = events[-1]
     assert len([event for event in events if event.get("status") == "completed"]) == 4
     assert result["discoveries"]
-    assert result["links"]
+    assert len(result["links"]) == {"amazon": 2, "arctic": 0, "mediterranean": 2,
+                                    "sahel": 1, "california": 0}[region]
+    assert result["n_samples"] == 312
+    assert result["n_variables"] == {"amazon": 3, "arctic": 2, "mediterranean": 4,
+                                    "sahel": 2, "california": 1}[region]
+    assert result["tau_max"] == 6
+    assert result["fdr_applied"] is True
     ids = {f"{item['region']}:{item['variable']}" for item in result["discoveries"]}
     for item in result["discoveries"]:
         assert item["region"] == region
@@ -35,11 +41,11 @@ def test_real_region_scan(region):
         assert item["source_file"]
         assert "timeseries" not in item
     for link in result["links"]:
+        assert link["cause"] != link["effect"]
         assert link["cause"] in ids and link["effect"] in ids
         assert 1 <= link["lag"] <= 6
         assert link["p_value"] <= 0.05
-    if region != "california":
-        assert any(link["cause"] != link["effect"] for link in result["links"])
+        assert link["p_value"] <= link["corrected_p"] < 0.05
     json.dumps(result, allow_nan=False)
 
 

@@ -29,10 +29,13 @@ raw monthly observations and source metadata.
   zero observations; there is currently no biosphere dataset.
 - Scouts flag a significant deseasonalized Mann–Kendall trend (`p < 0.05`) or a
   monthly residual anomaly (`|z| >= 2.5`).
-- PCMCI receives monthly means with seasonal and linear trends removed, aligns
-  all flagged variables over their shared date range, and uses analytic ParCorr,
-  `tau_max=6`, `pc_alpha=0.05`, and `alpha_level=0.05`.
-- Directed lagged links include self-links; contemporaneous associations are
+- PCMCI aligns flagged raw monthly series, subtracts each calendar month's
+  climatology, removes a linear trend, and standardizes each variable.
+  It uses analytic ParCorr, `tau_min=1`, `tau_max=6`, `pc_alpha=0.2`, and retains
+  links with Benjamini–Hochberg corrected `q < 0.05`. Set `GAIA_PCMCI_PC_ALPHA`
+  before starting the backend to configure the parent-selection threshold.
+- Directed lagged links exclude same-node self-links but retain same-variable
+  links across regions; contemporaneous associations are
   omitted. These are statistical candidates, not demonstrated physical causes.
 
 The app uses actual cached regional averages, not a fresh spatial query at the

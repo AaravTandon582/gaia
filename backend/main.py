@@ -38,7 +38,7 @@ class ScanRequest(BaseModel):
         return self
 
 
-def create_app(scouts=(), *, series_loader=None) -> FastAPI:
+def create_app(scouts=(), *, series_loader=None, pc_alpha=0.2) -> FastAPI:
     """Create an application with configured scouts and optional data retrieval."""
     app = FastAPI(title="GAIA")
     origins = os.getenv("GAIA_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
@@ -97,6 +97,7 @@ def create_app(scouts=(), *, series_loader=None) -> FastAPI:
                 app.state.scouts,
                 status_callback=send_json,
                 series_loader=app.state.series_loader,
+                pc_alpha=pc_alpha,
             )
 
             async def pipeline():
@@ -111,8 +112,9 @@ def create_app(scouts=(), *, series_loader=None) -> FastAPI:
                                 for item in discoveries if "values" in item]
                 await send_json({"type": "complete", "discovery_count": len(discoveries),
                                            "links": links, "discoveries": observations,
-                                           "method": "PCMCI · ParCorr · lag 1–6 months · α = 0.05",
-                                           "preprocessing": "Monthly means, deseasonalized and detrended"})
+                                           **orchestrator.causal_metadata,
+                                           "method": "PCMCI · ParCorr · lag 1–6 months · BH FDR q < 0.05",
+                                           "preprocessing": "Monthly climatology removed, linearly detrended, standardized"})
                 completed = True
                 logger.info("scan done region=%s links=%d in %.3fs", region, len(links), perf_counter() - started)
 
@@ -166,4 +168,4 @@ def create_app(scouts=(), *, series_loader=None) -> FastAPI:
     return app
 
 
-app = create_app(default_scouts())
+app = create_app(default_scouts(), pc_alpha=float(os.getenv("GAIA_PCMCI_PC_ALPHA", "0.2")))
