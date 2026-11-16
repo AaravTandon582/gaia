@@ -8,7 +8,6 @@ import pandas as pd
 
 from .cancellation import check_cancelled
 from ..data.loader import load_series
-from ..ml.inference import held_out_evaluation
 
 logger = logging.getLogger(__name__)
 
@@ -87,10 +86,12 @@ class AnomalyAgent:
                     errors_frame, pipeline.feature_names)
             except Exception as error:  # noqa: BLE001
                 logger.warning("Anomaly attribution unavailable: %s", error)
-            # Independent held-out evaluation on the validation period.
+            # This period selected the checkpoint; it is not an independent test.
             try:
                 check_cancelled()
-                result["held_out_evaluation"] = held_out_evaluation(pipeline)
+                from ..ml.inference import held_out_evaluation
+                result["held_out_evaluation"] = held_out_evaluation(
+                    pipeline, check_cancelled=check_cancelled)
             except Exception as error:  # noqa: BLE001
                 logger.warning("Held-out evaluation unavailable: %s", error)
                 result["held_out_evaluation"] = {"status": "unavailable", "reason": str(error)}

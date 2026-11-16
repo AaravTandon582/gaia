@@ -7,7 +7,6 @@ import type L from "leaflet";
 import { AgentStatus } from "@/components/AgentStatus";
 import CausalGraph from "@/components/CausalGraph";
 import { TimeSeriesChart } from "@/components/TimeSeriesChart";
-import { WaveletScalogram } from "@/components/WaveletScalogram";
 import { apiUrl, edgeId, nodeId, parseScanEvent, scanUrl, type Anomalies, type CatalogRegion, type CausalLink, type ScanResult, type StatusEvent } from "@/lib/api";
 import { type RegionSelection } from "@/lib/region";
 
@@ -16,8 +15,9 @@ const RegionMap = dynamic(() => import("@/components/RegionMap"), { ssr: false, 
 const DEMO_SCENARIOS = [
   { label: "Amazon Water Cycle", regionId: "amazon", hasData: true },
   { label: "Sahel Water Cycle", regionId: "sahel", hasData: true },
-  { label: "Arctic Teleconnections", regionId: "arctic", hasData: false },
-  { label: "Mediterranean Drying", regionId: "mediterranean", hasData: false },
+  { label: "Arctic Temperature and Snow", regionId: "arctic", hasData: true },
+  { label: "Mediterranean Water Cycle", regionId: "mediterranean", hasData: true },
+  { label: "California Soil Moisture", regionId: "california", hasData: true },
 ] as const;
 
 export function Dashboard() {
@@ -90,6 +90,7 @@ export function Dashboard() {
     setRunning(false);
     const found = catalog.find((item) => selection.lat >= item.bounds.south && selection.lat <= item.bounds.north && selection.lon >= item.bounds.west && selection.lon <= item.bounds.east);
     setActiveRegion(found ?? null);
+    setDemoRegion(found?.id ?? null);
     if (!found) { setPhase("No cached data at this location"); return; }
     setRegion({ lat: found.lat, lon: found.lon, bounds: found.bounds });
     if (!startDate || !endDate || startDate > endDate) { setError("Choose a valid start and end date."); setPhase("Invalid date range"); return; }
@@ -158,6 +159,7 @@ export function Dashboard() {
           <div className="mt-3">
             <p className="text-[11px] uppercase tracking-widest text-sky-200/60 mb-1">Demo scenarios</p>
             <select
+              aria-label="Demo scenario"
               value={demoRegion ?? ""}
               onChange={(event) => {
                 const id = event.target.value;
@@ -169,7 +171,6 @@ export function Dashboard() {
                   lon: (item.bounds.west + item.bounds.east) / 2,
                   bounds: item.bounds,
                 };
-                setDemoRegion(id);
                 beginScan(selection);
               }}
               className="w-full rounded border border-white/15 bg-slate-900 px-2 py-1.5 text-xs text-sky-100"
@@ -182,9 +183,9 @@ export function Dashboard() {
                   <option
                     key={scenario.regionId}
                     value={scenario.regionId}
-                    disabled={!scenario.hasData}
+                    disabled={item.variables.length === 0}
                   >
-                    {scenario.label}{!scenario.hasData ? " — no data yet" : ""}
+                    {scenario.label}{item.variables.length === 0 ? " — no cached variables" : ""}
                   </option>
                 );
               })}
@@ -250,7 +251,7 @@ export function Dashboard() {
                   <th className="text-left pb-1">Units</th>
                   <th className="text-left pb-1">Flagged</th>
                   <th className="text-left pb-1">Trend p</th>
-                  <th className="text-left pb-1">Sen's slope</th>
+                  <th className="text-left pb-1">Sen&apos;s slope</th>
                   <th className="text-left pb-1">Peak anomaly z</th>
                 </tr>
               </thead>
@@ -338,19 +339,10 @@ export function Dashboard() {
                   </p>
                   {causeTrend.sen_slope != null && (
                     <p className="mt-1 text-xs text-sky-100/70">
-                      Sen's slope ({nameFor(selectedEdge.cause)}): {causeTrend.sen_slope.toFixed(4)} per month
+                      Sen&apos;s slope ({nameFor(selectedEdge.cause)}): {causeTrend.sen_slope.toFixed(4)} per month
                     </p>
                   )}
                 </>
-              )}
-              {causeTrend?.values?.length && (
-                <WaveletScalogram
-                  values={causeTrend.values}
-                  dates={causeTrend.dates}
-                  width={300}
-                  height={140}
-                  title={`Wavelet scalogram · ${nameFor(selectedEdge.cause)}`}
-                />
               )}
               {causeTrend && causeTrend.inputsAvailable === false && (
                 <p className="mt-1 text-xs text-sky-100/40">

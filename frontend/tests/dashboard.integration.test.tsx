@@ -11,7 +11,8 @@ vi.mock("next/dynamic", async () => {
   const { default: RegionMap } = await import("../components/RegionMap");
   const React = await import("react");
   return { default: () => function TestMap(props: React.ComponentProps<typeof RegionMap>) {
-    const onMapReady = React.useCallback((map: Map) => { state.map = map; props.onMapReady?.(map); }, [props.onMapReady]);
+    const { onMapReady: notifyMapReady } = props;
+    const onMapReady = React.useCallback((map: Map) => { state.map = map; notifyMapReady?.(map); }, [notifyMapReady]);
     return <RegionMap {...props} onMapReady={onMapReady} />;
   } };
 });

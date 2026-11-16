@@ -113,7 +113,7 @@ def test_catalog_exposes_units_and_dataset():
     variables = DataLoader().list_variables()
     assert variables["Rainf_f_tavg"]["short_name"] == "GLDAS_NOAH025_M"
     assert variables["Rainf_f_tavg"]["units"] == "kg/m²/s"
-    assert len(variables) == 5
+    assert len(variables) == 6
     assert variables["Evap_tavg"]["regional_sources"]["sahel"]["short_name"] == "FLDAS_NOAH01_C_GL_M"
 
 

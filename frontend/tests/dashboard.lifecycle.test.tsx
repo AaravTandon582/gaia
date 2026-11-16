@@ -107,7 +107,7 @@ test("LSTMAnomalyBands shows no bands when none detected", () => {
       anomalies={{
         status: "complete",
         scope: "all_model_features",
-        retrospective: true as true,
+        retrospective: true as const,
         feature_names: ["T2M"],
         dates: ["2000-01-01", "2000-02-01"],
         reconstruction_error: [0.1, 0.2],
@@ -133,7 +133,7 @@ test("LSTMAnomalyBands aligns bands by calendar date not array position", () => 
       anomalies={{
         status: "complete",
         scope: "all_model_features",
-        retrospective: true as true,
+        retrospective: true as const,
         feature_names: ["T2M"],
         dates: ["2000-02-01"], // only Feb is anomalous
         reconstruction_error: [1.5],
@@ -183,7 +183,7 @@ test("TimeSeriesChart renders with anomalies prop", () => {
   const anomalies = {
     status: "complete" as const,
     scope: "all_model_features" as const,
-    retrospective: true as true,
+    retrospective: true as const,
     feature_names: ["T2M"],
     dates: ["2000-01-01", "2000-02-01"],
     reconstruction_error: [0.5, 1.2],

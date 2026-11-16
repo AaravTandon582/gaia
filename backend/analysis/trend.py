@@ -66,13 +66,13 @@ def analyze_trend(timeseries, dates, alpha=0.05):
     if mk_result.h:
         verdict = (
             f"A statistically significant {mk_result.trend} trend was detected "
-            f"after seasonal adjustment (Mann-Kendall p={mk_result.p:.3g}, "
+            f"in the raw monthly observations (Mann-Kendall p={mk_result.p:.3g}, "
             f"alpha={alpha:g}); Sen's slope is {mk_result.slope:.6g} units per month."
         )
     else:
         verdict = (
-            f"No statistically significant monotonic trend was detected after "
-            f"seasonal adjustment (Mann-Kendall p={mk_result.p:.3g}, alpha={alpha:g})."
+            f"No statistically significant monotonic trend was detected in the raw "
+            f"monthly observations (Mann-Kendall p={mk_result.p:.3g}, alpha={alpha:g})."
         )
     return {
         "deseasonalized": deseasonalized,

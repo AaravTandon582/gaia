@@ -140,6 +140,74 @@ def test_region_water_balances_aligns_different_date_orders():
     np.testing.assert_allclose(result["amazon"]["mean_residual"], 0.0)
 
 
+def test_region_water_balances_current_cache_state():
+    """Amazon now has Q (Qs_acc), but dS is still missing for all regions."""
+    from backend.data.loader import available_series, load_series
+    results = {}
+    for region in ["amazon", "sahel", "mediterranean", "arctic", "california"]:
+        discoveries = []
+        for variable in available_series(region):
+            s, meta = load_series(region, variable, ("2000-01-01", "2025-12-31"))
+            discoveries.append(dict(
+                region=region, variable=variable,
+                dates=s.index.strftime("%Y-%m-%d").tolist(),
+                values=s.tolist(), label=variable))
+        results[region] = region_water_balances(discoveries)[region]
+
+    # Amazon has P, ET, Q (Qs_acc), but still missing dS.
+    assert results["amazon"]["status"] == "inputs unavailable"
+    assert results["amazon"]["missing"] == ["dS"], results["amazon"]
+    # Sahel/Med: P and ET exist, Q and dS missing.
+    for region in ["sahel", "mediterranean"]:
+        assert results[region]["status"] == "inputs unavailable"
+        assert "Q" in results[region]["missing"]
+        assert "dS" in results[region]["missing"], results[region]
+    # Arctic: only T2M and SNOMAS available.
+    assert results["arctic"]["status"] == "inputs unavailable"
+    assert set(results["arctic"]["missing"]) == {"P", "ET", "Q", "dS"}, results["arctic"]
+    # California: only soil moisture.
+    assert results["california"]["status"] == "inputs unavailable"
+    assert set(results["california"]["missing"]) == {"P", "ET", "Q", "dS"}, results["california"]
+
+
+def test_region_water_balances_qs_acc_treated_as_partial_runoff():
+    """Qs_acc is storm surface runoff only; the balance reports it as partial."""
+    dates = [f"2000-{m:02d}-01" for m in range(1, 13)]
+    p = [10., 20., 30., 40., 50., 60., 70., 80., 90., 100., 110., 120.]
+    e = [4., 8., 12., 16., 20., 24., 28., 32., 36., 40., 44., 48.]
+    q = [0.08, 0.09, 0.11, 0.10, 0.08, 0.06, 0.04, 0.03, 0.02, 0.02, 0.03, 0.03]
+    discoveries = [
+        discovery("amazon", "Rainf_f_tavg", p, dates),
+        discovery("amazon", "Evap_tavg", e, dates),
+        discovery("amazon", "Qs_acc", q, dates),
+    ]
+    result = region_water_balances(discoveries)
+    assert result["amazon"]["status"] == "inputs unavailable"
+    assert "dS" in result["amazon"]["missing"]
+    assert "Q" not in result["amazon"]["missing"], "Qs_acc should be recognized as Q"
+    dates = [f"2000-{m:02d}-01" for m in range(1, 7)]
+    p = [10., 20., 30., 40., 50., 60.]
+    e = [4., 8., 12., 16., 20., 24.]
+    q = [3., 7., 11., 15., 19., 23.]
+    ds = [3., 5., 7., 9., 11., 13.]
+    # One series is in reverse order; alignment must still match by date.
+    inputs = [discovery("amazon", "Rainf_f_tavg", p, dates),
+              discovery("amazon", "Evap_tavg", e, dates),
+              discovery("amazon", "Qs_acc", list(reversed(q)), list(reversed(dates))),
+              discovery("amazon", "dS_total", ds, dates)]
+    import backend.data.loader as loader_module
+    original = loader_module.WATER_BALANCE_TERMS["amazon"]
+    loader_module.WATER_BALANCE_TERMS["amazon"] = dict(P="Rainf_f_tavg", ET="Evap_tavg",
+                                                       Q="Qs_acc", dS="dS_total")
+    try:
+        result = region_water_balances(inputs)
+    finally:
+        loader_module.WATER_BALANCE_TERMS["amazon"] = original
+    assert result["amazon"]["status"] == "complete"
+    assert result["amazon"]["n_months"] == 6
+    np.testing.assert_allclose(result["amazon"]["mean_residual"], 0.0)
+
+
 @pytest.mark.parametrize("fault", ["nan", "gap", "short", "units", "bounds", "duplicates"])
 def test_regional_balance_rejects_incompatible_inputs(monkeypatch, fault):
     from backend.analysis import physics

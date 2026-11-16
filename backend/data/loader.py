@@ -11,6 +11,39 @@ import numpy as np
 import pandas as pd
 
 CACHE_DIR = Path(__file__).parent / "cache"
+# Registry of which cached file serves each region-variable pair. The file name
+# may differ from the variable name (e.g. Qs_acc uses a Giovanni export file).
+REGION_VARIABLE_FILES = {
+    ("amazon", "Rainf_f_tavg"): "amazon_Rainf_f_tavg.csv",
+    ("amazon", "Evap_tavg"): "amazon_Evap_tavg.csv",
+    ("amazon", "SoilMoi0_10cm_inst"): "amazon_SoilMoi0_10cm_inst.csv",
+    ("amazon", "Qs_acc"): "g4.areaAvgTimeSeries.GLDAS_NOAH025_M_2_1_Qs_acc.20000101-20251231.75W_15S_45W_5N.csv",
+    ("sahel", "Rainf_f_tavg"): "sahel_Rainf_f_tavg.csv",
+    ("sahel", "Evap_tavg"): "sahel_Evap_tavg.csv",
+    ("mediterranean", "Rainf_f_tavg"): "mediterranean_Rainf_f_tavg.csv",
+    ("mediterranean", "Evap_tavg"): "mediterranean_Evap_tavg.csv",
+    ("mediterranean", "SoilMoi0_10cm_inst"): "mediterranean_SoilMoi0_10cm_inst.csv",
+    ("mediterranean", "T2M"): "mediterranean_T2M.csv",
+    ("arctic", "T2M"): "arctic_T2M.csv",
+    ("arctic", "SNOMAS"): "arctic_SNOMAS.csv",
+    ("california", "SoilMoi0_10cm_inst"): "california_SoilMoi0_10cm_inst.csv",
+}
+
+# Match the products used by the curated CSVs; do not silently substitute models.
+DATASETS = {
+    "T2M": ("M2T1NXSLV", "5.12.4"),
+    "SNOMAS": ("M2TMNXLND", "5.12.4"),
+    "Rainf_f_tavg": ("GLDAS_NOAH025_M", "2.1"),
+    "Evap_tavg": ("GLDAS_NOAH025_3H", "2.1"),
+    "SoilMoi0_10cm_inst": ("GLDAS_NOAH025_M", "2.1"),
+    "Qs_acc": ("GLDAS_NOAH025_M", "2.1"),
+}
+REGIONAL_DATASETS = {
+    ("sahel", "Evap_tavg"): ("FLDAS_NOAH01_C_GL_M", "001"),
+    ("mediterranean", "T2M"): ("M2TMNXSLV", "5.12.4"),
+    ("amazon", "Qs_acc"): ("GLDAS_NOAH025_M", "2.1"),
+}
+
 REGIONS = [
     dict(id="amazon", name="Amazon Basin", lat=-5, lon=-60,
          bounds=dict(west=-75, south=-15, east=-45, north=5)),
@@ -29,6 +62,7 @@ VARIABLES = {
     "Rainf_f_tavg": ("Precipitation", "hydro", "kg/m²/s"),
     "Evap_tavg": ("Evapotranspiration", "hydro", "kg/m²/s"),
     "SoilMoi0_10cm_inst": ("Soil moisture", "hydro", "kg/m²"),
+    "Qs_acc": ("Storm surface runoff", "hydro", "kg/m²/s"),
 }
 
 # Match the products used by the curated CSVs; do not silently substitute models.
@@ -38,10 +72,12 @@ DATASETS = {
     "Rainf_f_tavg": ("GLDAS_NOAH025_M", "2.1"),
     "Evap_tavg": ("GLDAS_NOAH025_3H", "2.1"),
     "SoilMoi0_10cm_inst": ("GLDAS_NOAH025_M", "2.1"),
+    "Qs_acc": ("GLDAS_NOAH025_M", "2.1"),
 }
 REGIONAL_DATASETS = {
     ("sahel", "Evap_tavg"): ("FLDAS_NOAH01_C_GL_M", "001"),
     ("mediterranean", "T2M"): ("M2TMNXSLV", "5.12.4"),
+    ("amazon", "Qs_acc"): ("GLDAS_NOAH025_M", "2.1"),
 }
 
 # Water-balance term mapping: which cached variable serves as each budget
@@ -52,7 +88,7 @@ REGIONAL_DATASETS = {
 # region currently caches a compatible storage-change product. As a result
 # every region reports ``inputs unavailable`` until compatible products exist.
 WATER_BALANCE_TERMS = {
-    "amazon": dict(P="Rainf_f_tavg", ET="Evap_tavg", Q=None, dS=None),
+    "amazon": dict(P="Rainf_f_tavg", ET="Evap_tavg", Q="Qs_acc", dS=None),
     "sahel": dict(P="Rainf_f_tavg", ET="Evap_tavg", Q=None, dS=None),
     "mediterranean": dict(P="Rainf_f_tavg", ET="Evap_tavg", Q=None, dS=None),
     "arctic": dict(P=None, ET=None, Q=None, dS=None),
@@ -63,9 +99,12 @@ WATER_BALANCE_TERMS = {
 def available_series(region, domain=None):
     if region not in {item["id"] for item in REGIONS}:
         raise ValueError(f"Unsupported region: {region}")
-    return [variable for variable, (_, kind, _) in VARIABLES.items()
-            if (domain is None or kind == domain)
-            and (CACHE_DIR / f"{region}_{variable}.csv").is_file()]
+    return [
+        variable
+        for variable, (_, kind, _) in VARIABLES.items()
+        if (domain is None or kind == domain)
+        and (CACHE_DIR / REGION_VARIABLE_FILES.get((region, variable), "")).is_file()
+    ]
 
 
 def region_catalog():
@@ -103,7 +142,7 @@ def _read_export(path_string, modified):
 def load_series(region, variable, date_range):
     if variable not in available_series(region):
         raise ValueError(f"No cached data for {region}:{variable}")
-    path = CACHE_DIR / f"{region}_{variable}.csv"
+    path = CACHE_DIR / REGION_VARIABLE_FILES[region, variable]
     series, metadata = _read_export(str(path), path.stat().st_mtime_ns)
     start, end = (pd.Timestamp(value).to_period("M").to_timestamp() for value in date_range)
     series = series.loc[start:end].copy()
