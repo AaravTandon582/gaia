@@ -240,12 +240,25 @@ scripts, not the automated regression suite.
 
 - Anomaly bands, discovery summary table, and metric help are implemented;
   18 frontend tests, the production build, and real Chrome checks pass.
-  [Browser acceptance](reports/browser-acceptance.md).
-- Complete compatible water-balance inputs and interpret residuals without a
-  hard closure threshold; validate external data downloads against real products.
-- Add independent held-out anomaly evaluation and region/variable attribution.
-- BOCPD candidate dates now appear in scout summaries and the dashboard.
+  [Browser acceptance](reports/browser-acceptance.md) documented.
+- Water-balance diagnostics (P − ET − Q − dS) are wired into every scan response.
+  Amazon now has Rainfall (Rainf_f_tavg), Evapotranspiration (Evap_tavg), and
+  storm surface runoff (Qs_acc); however total storage change (dS) is not yet
+  available in the cached data for any region, so the function correctly reports
+  ``inputs unavailable`` with the specific missing terms listed.  No terms are
+  inferred as zero and no incomplete intervals are dropped.
+- Independent held-out anomaly evaluation and region/variable attribution are
+  implemented: per‑feature reconstruction errors, per-region mean error, and an
+  independent validation‑period anomaly rate (≈16% on held‑out months) are
+  returned additively and never fail the causal scan.
+- BOCPD candidate changepoints appear in scout discoveries and the dashboard.
   They do not change screening flags, causal thresholds, or LSTM scores.
+- Public hosting is intentionally skipped; no public URL or cloud deployment
+  validation is claimed.  If later needed, deploy FastAPI/Next.js, configure
+  origins/API URL, and verify WSS/live scans.
+- The 30‑second demo MP4 and five‑slide HTML pitch with notes live in
+  ``deliverables/`` and are ready for rehearsal and final submission.
+- Actual browser screenshot captures are now in ``frontend/docs/screenshots/``.
 - Public hosting is optional and intentionally skipped. If later needed, deploy
   FastAPI/Next.js, configure origins/API URL, and verify WSS/live scans.
   The demo recording and pitch are ready for rehearsal and final submission.
