@@ -1,6 +1,9 @@
 """Descriptive water-balance diagnostics for aligned physical observations."""
 
 import numpy as np
+import pandas as pd
+
+from ..data.loader import WATER_BALANCE_TERMS
 
 
 def validate_water_balance(precip, et, runoff, delta_storage):
@@ -52,3 +55,73 @@ def validate_water_balance(precip, et, runoff, delta_storage):
     interpretation += " This describes closure without a pass/fail threshold; differences in product, coverage, and timing can contribute to the residual."
     return {"mean_residual": mean_residual, "mean_relative_error": relative_error,
             "interpretation": interpretation}
+
+
+def region_water_balances(discoveries):
+    """Compute P - ET - Q - dS per region when all four terms are available.
+
+    ``discoveries`` is the scout discovery list (each entry carries ``region``,
+    ``variable``, ``dates`` and ``values``). Results are keyed by region id.
+    A region returns ``status: "complete"`` with the numeric balance only when
+    every term is present; otherwise it returns ``status: "inputs unavailable"``
+    with the list of missing terms. No term is inferred as zero and no
+    incomplete interval is dropped.
+    """
+    by_region = {}
+    for discovery in discoveries:
+        by_region.setdefault(discovery["region"], {})[discovery["variable"]] = discovery
+
+    results = {}
+    for region, terms in WATER_BALANCE_TERMS.items():
+        variables = by_region.get(region, {})
+        missing = [term for term, var in terms.items()
+                   if var is None or var not in variables]
+        if missing:
+            results[region] = {"status": "inputs unavailable", "missing": missing}
+            continue
+
+        inputs = [variables[terms[term]] for term in ("P", "ET", "Q", "dS")]
+        # Require explicitly normalized interval totals. Rates, accumulations,
+        # and storage stocks cannot be mixed by merely aligning timestamps.
+        if any(item.get("unit") != "mm/month" for item in inputs):
+            results[region] = {"status": "inputs unavailable",
+                               "missing": ["all terms normalized to mm/month"]}
+            continue
+        bounds = [item.get("source_bounds") for item in inputs]
+        if any(bound is None or len(bound) != 4 for bound in bounds) or any(
+                not np.array_equal(bound, bounds[0]) for bound in bounds[1:]):
+            results[region] = {"status": "inputs unavailable",
+                               "missing": ["matching spatial bounds"]}
+            continue
+        try:
+            indices = [pd.DatetimeIndex(item["dates"]) for item in inputs]
+            shared = indices[0].sort_values()
+            months = shared.year.to_numpy() * 12 + shared.month.to_numpy()
+            compatible = (len(shared) >= 2 and all(
+                not index.hasnans and index.is_unique and index.sort_values().equals(shared)
+                for index in indices) and np.all(np.diff(months) == 1))
+            if not compatible:
+                raise ValueError("Dates must cover the same consecutive months")
+            arrays = [_align(item["dates"], item["values"], shared) for item in inputs]
+            result = validate_water_balance(*arrays)
+        except (ValueError, TypeError, IndexError):
+            result = "inputs unavailable"
+        if isinstance(result, str):
+            results[region] = {"status": "inputs unavailable",
+                               "missing": ["finite values on identical consecutive monthly intervals"]}
+        else:
+            results[region] = {"status": "complete", "n_months": int(len(shared)),
+                               "unit": "mm/month", **result}
+
+    return results
+
+
+def _align(dates, values, shared):
+    """Return values reordered to match ``shared`` dates."""
+    date_index = pd.DatetimeIndex(dates)
+    if len(values) != len(date_index):
+        raise ValueError("Each date must have one value")
+    positions = date_index.get_indexer(shared)
+    if (positions < 0).any():
+        raise ValueError("Some shared dates are missing from the series")
+    return np.asarray(values, dtype=float)[positions]

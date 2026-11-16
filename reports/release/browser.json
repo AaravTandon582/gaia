@@ -1,0 +1,10 @@
+{
+  "errors": [],
+  "regimeText": "Candidate regime changes\n\nBOCPD screens standardized, seasonally adjusted observations. These dates are exploratory boundaries, not significance tests.\n\nPrecipitation: 2015-09, 2016-07, 2020-01, 2022-12, 2024-05\nEvapotranspiration: 2006-06, 2008-07, 2009-07, 2011-03, 2015-10, 2020-08, 2023-10, 2024-10, 2025-06\nSoil moisture: 2001-02, 2002-10, 2009-10, 2015-09, 2016-03, 2016-09, 2018-08, 2023-08, 2025-02",
+  "balanceText": "Water balance\n\nInputs unavailable. Missing: total runoff, total storage change.",
+  "sahelBands": 19,
+  "width": {
+    "viewport": 390,
+    "document": 390
+  }
+}

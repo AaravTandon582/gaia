@@ -8,7 +8,7 @@ import { AgentStatus } from "@/components/AgentStatus";
 import CausalGraph from "@/components/CausalGraph";
 import { TimeSeriesChart } from "@/components/TimeSeriesChart";
 import { WaveletScalogram } from "@/components/WaveletScalogram";
-import { apiUrl, edgeId, nodeId, parseScanEvent, scanUrl, type CatalogRegion, type CausalLink, type ScanResult, type StatusEvent } from "@/lib/api";
+import { apiUrl, edgeId, nodeId, parseScanEvent, scanUrl, type Anomalies, type CatalogRegion, type CausalLink, type ScanResult, type StatusEvent } from "@/lib/api";
 import { type RegionSelection } from "@/lib/region";
 
 const RegionMap = dynamic(() => import("@/components/RegionMap"), { ssr: false, loading: () => <div className="grid h-full place-items-center">Loading map…</div> });
@@ -31,6 +31,7 @@ export function Dashboard() {
   const [selectedEdge, setSelectedEdge] = useState<CausalLink | null>(null);
   const [events, setEvents] = useState<StatusEvent[]>([]);
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [anomalies, setAnomalies] = useState<Anomalies | undefined>(undefined);
   const [running, setRunning] = useState(false);
   const [phase, setPhase] = useState("Select a shaded region to scan");
   const [error, setError] = useState("");
@@ -83,6 +84,7 @@ export function Dashboard() {
     setRegion(selection);
     setSelectedEdge(null);
     setResult(null);
+    setAnomalies(undefined);
     setEvents([]);
     setError("");
     setRunning(false);
@@ -107,11 +109,16 @@ export function Dashboard() {
           const event = parseScanEvent(message.data);
           if (event.type === "status") {
             setEvents((current) => [...current.slice(-39), event]);
-            if (event.status === "causal_started") setPhase("Discovering causal links…");
+            if (event.agent === "lstm") {
+              if (event.status === "started") setPhase("LSTM anomaly scan started…");
+              else if (event.status === "anomaly_complete") setPhase("LSTM anomaly scan complete.");
+              else if (event.status === "anomaly_unavailable") setPhase("LSTM anomaly data unavailable.");
+            } else if (event.status === "causal_started") setPhase("Discovering statistical associations…");
             else if (event.status === "scan_started") setPhase("Scouts are scanning…");
           } else if (event.type === "complete") {
             setResult(event);
-            setPhase(`Scan complete · ${event.links.length} causal links`);
+            setAnomalies(event.anomalies);
+            setPhase(`Scan complete · ${event.links.length} statistical association${event.links.length === 1 ? "" : "s"}`);
             setRunning(false);
             disconnect();
           } else fail(event.message);
@@ -188,7 +195,7 @@ export function Dashboard() {
           <RegionMap region={region} regions={catalog} onSelect={beginScan} onMapReady={setLeafletMap} />
           {result && <CausalGraph map={leafletMap} discoveries={result.discoveries} links={result.links} selectedEdge={selectedEdge} onEdgeSelect={setSelectedEdge} />}
         </div>
-        <p className="shrink-0 border-t border-white/10 px-4 py-2 text-xs text-sky-100/60">Blue links: positive · Pink: negative · Arrows: cause → effect</p>
+        <p className="shrink-0 border-t border-white/10 px-4 py-2 text-xs text-sky-100/60">Blue links: positive · Pink: negative · Arrows: lagged association direction (source → target)</p>
       </main>
       <aside className="flex flex-col gap-4 overflow-auto bg-panel p-4 lg:min-h-0">
         <section>
@@ -222,15 +229,73 @@ export function Dashboard() {
           </div>
         )}
         {result && <section aria-label="Causal graph results" className="rounded-lg border border-white/10 p-3">
-          <h2 className="font-medium">{result.links.length} statistical associations</h2>
+          <h2 className="font-medium">{result.links.length} statistical association{result.links.length === 1 ? "" : "s"}</h2>
           <p className="mt-1 text-xs text-sky-100/55">{result.method}<br />{result.preprocessing}</p>
           {result.links.length === 0 ? (
             <div className="mt-3 flex flex-col items-center gap-2 text-sky-100/70">
               <p className="text-sm">No significant lagged links in this scan.</p>
               <p className="text-[11px] leading-relaxed text-center max-w-xs">Try another region or date range to search for lagged statistical associations.</p>
             </div>
-          ) : <ul className="mt-3 max-h-52 space-y-2 overflow-auto">{[...result.links].sort((a, b) => Number(a.cause === a.effect) - Number(b.cause === b.effect) || Math.abs(b.strength) - Math.abs(a.strength)).map((edge) => <li key={edgeId(edge)}><button onClick={() => setSelectedEdge(edge)} className={`w-full rounded border p-2 text-left text-xs ${selectedEdge && edgeId(selectedEdge) === edgeId(edge) ? "border-amber-400 bg-amber-400/10" : "border-white/10 hover:bg-white/5"}`}>{nameFor(edge.cause)} → {nameFor(edge.effect)}<span className="mt-1 block text-sky-100/50">{edge.lag} months · r {edge.strength.toFixed(3)} · p {edge.p_value.toPrecision(2)}</span></button></li>)}</ul>}
+          ) : <ul className="mt-3 max-h-52 space-y-2 overflow-auto">{[...result.links].sort((a, b) => Number(a.cause === a.effect) - Number(b.cause === b.effect) || Math.abs(b.strength) - Math.abs(a.strength)).map((edge) => <li key={edgeId(edge)}><button onClick={() => setSelectedEdge(edge)} className={`w-full rounded border p-2 text-left text-xs ${selectedEdge && edgeId(selectedEdge) === edgeId(edge) ? "border-amber-400 bg-amber-400/10" : "border-white/10 hover:bg-white/5"}`}>{nameFor(edge.cause)} → {nameFor(edge.effect)}<span className="mt-1 block text-sky-100/50">{edge.lag} month{edge.lag === 1 ? "" : "s"} · r {edge.strength.toFixed(3)} · p {edge.p_value.toPrecision(2)}</span></button></li>)}</ul>}
           <p className="mt-3 text-[11px] text-sky-100/45">Statistical candidate links under PCMCI assumptions; not proof of physical causation.</p>
+        </section>}
+        {result && result.discoveries.length > 0 && (
+          <section className="rounded-lg border border-white/10 p-3">
+            <p className="text-[11px] uppercase tracking-widest text-sky-200/60 mb-2">Discovery summary</p>
+            <div className="overflow-x-auto" role="region" aria-label="Discovery statistics" tabIndex={0}>
+            <table className="w-full min-w-[560px] text-xs border-collapse [&_th]:pr-3 [&_td]:pr-3 [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
+              <thead>
+                <tr className="text-sky-100/40 border-b border-white/10">
+                  <th className="text-left pb-1">Region · variable</th>
+                  <th className="text-left pb-1">Units</th>
+                  <th className="text-left pb-1">Flagged</th>
+                  <th className="text-left pb-1">Trend p</th>
+                  <th className="text-left pb-1">Sen's slope</th>
+                  <th className="text-left pb-1">Peak anomaly z</th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.discoveries.map((item) => (
+                  <tr key={nodeId(item)} className="border-b border-white/10 last:border-0">
+                    <td className="py-1 text-sky-100/70">{item.region_name} · {item.label}</td>
+                    <td className="py-1 text-sky-100/60">{item.unit}</td>
+                    <td className="py-1">{item.flagged ? <span className="text-rose-300">Yes</span> : <span className="text-sky-100/50">No</span>}</td>
+                    <td className="py-1 text-sky-100/60">{Number.isFinite(item.trend_p) ? item.trend_p.toPrecision(3) : "unavailable"}</td>
+                    <td className="py-1 text-sky-100/60">{item.sen_slope != null ? item.sen_slope.toFixed(4) : "unavailable"}</td>
+                    <td className="py-1 text-sky-100/60">{Number.isFinite(item.peak_anomaly_z) ? item.peak_anomaly_z.toPrecision(3) : "unavailable"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            </div>
+            <p className="mt-1 text-[10px] text-sky-100/45">Scroll the table horizontally for all metrics.</p>
+            <p className="mt-2 text-[10px] text-sky-100/45 leading-relaxed">
+              Raw p-value is the unadjusted ParCorr test p; FDR-adjusted p is the Benjamini-Hochberg corrected q. Strength is the signed
+              partial-correlation coefficient; lag is in months. Transfer entropy (TE) is in nats — finite-sample estimates may be negative —
+              and TE p-value is a separate circular-shift diagnostic, not FDR-corrected, and does not remove a PCMCI link. The LSTM score is a
+              reconstruction diagnostic, not a p-value or a causal attribution. Mann–Kendall uses the Hamed–Rao modification on raw monthly
+              data; its p-value is not OLS significance.
+            </p>
+          </section>
+        )}
+        {result && <section aria-label="Candidate regime changes" className="rounded-lg border border-white/10 p-3">
+          <h2 className="text-sm font-medium">Candidate regime changes</h2>
+          <p className="mt-1 text-xs text-sky-100/55">BOCPD screens standardized, seasonally adjusted observations. These dates are exploratory boundaries, not significance tests.</p>
+          <ul className="mt-3 space-y-2 text-xs">
+            {result.discoveries.map(item => <li key={nodeId(item)}>
+              <span className="text-sky-100/80">{item.label}: </span>
+              <span className="text-sky-100/55">{item.changepoints === undefined ? "Unavailable" : item.changepoints.length ? item.changepoints.map(date => date.slice(0, 7)).join(", ") : "No candidate boundaries"}</span>
+            </li>)}
+          </ul>
+        </section>}
+        {result && activeRegion && result.water_balance?.[activeRegion.id] && <section aria-label="Water balance" className="rounded-lg border border-white/10 p-3">
+          <h2 className="text-sm font-medium">Water balance</h2>
+          {(() => {
+            const balance = result.water_balance[activeRegion.id];
+            return balance.status === "inputs unavailable"
+              ? <p className="mt-2 text-xs text-sky-100/55">Inputs unavailable. Missing: {balance.missing.map(term => ({ P: "precipitation", ET: "evapotranspiration", Q: "total runoff", dS: "total storage change" } as Record<string, string>)[term] ?? term).join(", ")}.</p>
+              : <p className="mt-2 text-xs text-sky-100/55">Mean residual: {balance.mean_residual.toPrecision(3)} {balance.unit}. {balance.interpretation}</p>;
+          })()}
         </section>}
         {selectedEdge && (
           <>
@@ -238,7 +303,7 @@ export function Dashboard() {
               <h2 className="text-amber-200">Selected statistical association</h2>
               <p className="mt-2">{nameFor(selectedEdge.cause)} → {nameFor(selectedEdge.effect)}</p>
               <p className="mt-2 text-xs text-sky-100/70">
-                Lag: {selectedEdge.lag} months<br />
+                Lag: {selectedEdge.lag} month{selectedEdge.lag === 1 ? "" : "s"}<br />
                 Strength: {selectedEdge.strength.toFixed(4)}<br />
                 p-value: {selectedEdge.p_value.toPrecision(4)}
                 {selectedEdge.corrected_p != null && (
@@ -298,17 +363,17 @@ export function Dashboard() {
                     Data consistency check: mean residual {causeTrend.meanResidualMmPerMonth.toFixed(2)} mm/month
                   </p>
                   <p className="mt-0 text-[10px] text-sky-100/45">
-                    Compares P, ET, runoff and storage change. Tests whether datasets agree, not whether a link is causal.
+                    Compares P, ET, runoff and storage change. Tests whether datasets agree, not whether a link is a statistical association.
                   </p>
                 </>
               )}
             </section>
             <p className="mt-3 text-[11px] text-sky-100/45">
-              Association from lagged partial correlation after seasonal and trend removal; not proof of causation.
+              Association from lagged partial correlation after seasonal and trend removal; a statistical association only.
             </p>
           </>
         )}
-        <TimeSeriesChart key={activeRegion?.id ?? "empty"} discoveries={result?.discoveries ?? []} />
+        <TimeSeriesChart key={activeRegion?.id ?? "empty"} discoveries={result?.discoveries ?? []} anomalies={anomalies} />
       </aside>
     </div>
   </div>;

@@ -44,9 +44,10 @@ The local Anaconda interpreter (`/opt/anaconda3/bin/python`) has these dependenc
   `is_significant`, and `verdict`. Input must contain at least 24 finite values
   at consecutive monthly dates. Seasonal adjustment subtracts the estimated
   additive seasonal component, retaining the trend and residual noise. OLS and
-  Sen slopes are per month. Significance is based on original Mann-Kendall;
-  autocorrelated residuals require a dependence-aware test before scientific
-  claims. No automatic interpolation or date sorting is performed.
+  Sen slopes are per month. OLS uses the deseasonalized series; significance
+  currently uses Hamed–Rao modified Mann–Kendall on raw monthly values, with a
+  constant/seasonal-only special case. No automatic interpolation or date
+  sorting is performed.
 - `BOCPD(...).detect(timeseries)` returns `(changepoints, posterior)`.
   `posterior[t, r]` is the probability of run length r after t observations,
   including the initial prior row. Shape is `(T+1, T+1)`. Indices mark the first
@@ -75,3 +76,13 @@ Arrays remain NumPy arrays; convert them to lists when serializing to JSON.
 - [Adams & MacKay, Bayesian Online Changepoint Detection](https://arxiv.org/abs/0710.3742)
 - [PyWavelets multilevel DWT](https://pywavelets.readthedocs.io/en/latest/regression/multilevel.html)
 - [PyWavelets continuous wavelet transform](https://pywavelets.readthedocs.io/en/latest/ref/cwt.html)
+
+## Regional water balance
+
+`region_water_balances(discoveries)` is included in the final scan response as
+`water_balance`. Current cached regions report missing total runoff/storage
+terms. Future complete inputs must explicitly use `mm/month`, share spatial
+bounds, and cover identical consecutive months with finite values. Different
+orders are aligned by date; gaps, duplicate months, incompatible units, and
+nonfinite observations produce an unavailable result. Unit conversions and
+confirmation of total runoff/storage semantics must happen before this function.

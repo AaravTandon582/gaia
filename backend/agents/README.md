@@ -8,7 +8,7 @@ A failed scout fails the scan and cancels unfinished scouts.
 
 The default app configures four domain scouts and reads curated NASA Giovanni
 exports from `backend/data/cache`. Scouts screen monthly data for a significant
-deseasonalized Mann–Kendall trend or a detrended monthly anomaly of at least 2.5
+Hamed–Rao modified Mann–Kendall trend on raw monthly values or a detrended monthly anomaly of at least 2.5
 standard deviations. Only flagged variables enter PCMCI. Their raw series are
 aligned, monthly climatology is subtracted, a linear trend is removed, and
 each residual series is standardized. Scout screening inputs stay unchanged.
@@ -67,6 +67,13 @@ and finish, then a `causal_started` status. The final message is
 `{type: "complete", discovery_count, links, discoveries, method, preprocessing}`;
 failures emit `type: "error"`. Discoveries contain raw dates/values, signal
 summaries, and source metadata; pandas series are excluded from JSON.
+The default app also runs `AnomalyAgent` in a worker thread and adds `anomalies`:
+date-aligned reconstruction errors/flags, training threshold, and model feature
+names. Its scope is all 12 model features across five regions, not attribution
+to the selected region. Missing model dependencies/artifacts/features return an
+explicit `unavailable` status without failing the causal scan. Cancellation is
+checked between inference batches. See [the UI contract](../../docs/cursor-handoff.md).
+
 The complete response also includes `n_samples` (aligned monthly rows before
 lag trimming), `n_variables` (flagged unique nodes), `tau_max`, and `fdr_applied`.
 For an empty variable set these counts are zero and `fdr_applied` is false.
@@ -81,3 +88,11 @@ API readiness. CORS and WebSocket origins default to localhost/127.0.0.1 port
 
 Run focused checks with `python -m pytest backend/agents/tests -q` after installing
 `backend/requirements-dev.txt`.
+
+## Candidate regime dates
+
+Each default discovery includes `changepoints`, a list of ISO calendar dates.
+BOCPD processes standardized deseasonalized observations, with a cancellation
+check at every streaming update. Missing months/values remain invalid rather
+than being compressed. Boundaries are heuristic and do not alter the screening
+flag or PCMCI graph. The dashboard displays them in a separate summary.

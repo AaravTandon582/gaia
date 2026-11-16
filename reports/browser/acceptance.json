@@ -1,0 +1,50 @@
+{
+  "date": "2026-11-16T00:21:50.881Z",
+  "mode": "Next.js production build / headless Chrome / real FastAPI",
+  "normal": {
+    "links": 2,
+    "bands": 19,
+    "closed": true
+  },
+  "switching": {
+    "firstClosed": true,
+    "firstReturnedResult": false,
+    "links": 1
+  },
+  "refresh": {
+    "closeCalled": {
+      "before": 1,
+      "url": "ws://127.0.0.1:8000/ws/scan",
+      "after": 2
+    },
+    "linksAfterRefresh": 0,
+    "resultBeforeRefresh": false
+  },
+  "cancel": {
+    "links": 0,
+    "canRunAgain": true
+  },
+  "invalidDate": "amazon:Rainf_f_tavg needs at least 24 cached months in the selected range",
+  "empty": {
+    "message": "No significant lagged links in this scan.",
+    "links": 0
+  },
+  "mobile": {
+    "viewport": 390,
+    "documentWidth": 390,
+    "mapHeight": 380,
+    "table": {
+      "width": 332,
+      "contentWidth": 560,
+      "overflow": "auto"
+    },
+    "bands": 19
+  },
+  "consoleErrors": [],
+  "failedRequests": [],
+  "tilesLoaded": 12,
+  "desktopWidth": {
+    "viewport": 1440,
+    "document": 1440
+  }
+}

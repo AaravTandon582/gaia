@@ -36,3 +36,12 @@ class EarthSystemAutoencoder(nn.Module):
     def anomaly_score(self, x):
         """Per-timestep mean squared error over normalized features (batch, months)."""
         return torch.mean((self(x) - x) ** 2, dim=-1)
+
+    def feature_errors(self, x):
+        """Per-timestep, per-feature squared reconstruction error (batch, months, features).
+
+        Used for region/variable attribution: the combined MSE is averaged over
+        all 12 features, but this returns each feature's own contribution so the
+        user can see which regions or variables drive a given anomaly.
+        """
+        return (self(x) - x) ** 2

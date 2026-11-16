@@ -34,3 +34,15 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Screenshots (placeholders)
+
+| View | Description |
+|------|-------------|
+| ![Dashboard main view](docs/screenshots/dashboard-main.png) | Region map, demo scenarios, and scan controls |
+| ![Statistical associations results](docs/screenshots/results-panel.png) | Link list with lag, strength, p-value, FDR-adjusted p |
+| ![Selected association detail](docs/screenshots/detail-panel.png) | Lag, strength, p-values, TE, wavelet scalogram, consistency check |
+| ![Discovery summary table](docs/screenshots/summary-table.png) | Per-variable metrics with unavailable handling |
+| ![LSTM anomaly bands](docs/screensshots/anomaly-bands.png) | Calendar-date aligned red bands on time series |
+
+> Screenshots are placeholders — add actual captures under `docs/screenshots/` for the demo reel.

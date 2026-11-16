@@ -1,0 +1,62 @@
+INFO:backend.main:scan start region=amazon
+INFO:backend.main:scan done region=amazon links=2 in 4.023s
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=amazon
+INFO:backend.main:client disconnected
+INFO:backend.main:scan cancelled region=amazon
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=sahel
+INFO:backend.main:scan done region=sahel links=1 in 0.971s
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=amazon
+INFO:backend.main:client disconnected
+INFO:backend.main:scan cancelled region=amazon
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=amazon
+INFO:backend.main:client disconnected
+INFO:backend.main:scan cancelled region=amazon
+INFO:backend.main:connection closed
+INFO:backend.main:client disconnected
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=amazon
+INFO:backend.main:client disconnected
+INFO:backend.main:scan cancelled region=amazon
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=amazon
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=amazon
+INFO:backend.main:scan done region=amazon links=2 in 1.778s
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=amazon
+INFO:backend.main:scan done region=amazon links=2 in 1.889s
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=amazon
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=amazon
+INFO:backend.main:scan done region=amazon links=2 in 1.946s
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=sahel
+INFO:backend.main:scan done region=sahel links=1 in 1.526s
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=amazon
+INFO:backend.main:scan done region=amazon links=2 in 2.126s
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=amazon
+INFO:backend.main:client disconnected
+INFO:backend.main:scan cancelled region=amazon
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=sahel
+INFO:backend.main:scan done region=sahel links=1 in 1.065s
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=amazon
+INFO:backend.main:scan done region=amazon links=2 in 2.924s
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=sahel
+INFO:backend.main:scan done region=sahel links=1 in 1.291s
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=arctic
+INFO:backend.main:scan done region=arctic links=0 in 0.275s
+INFO:backend.main:connection closed
+INFO:backend.main:scan start region=amazon
+INFO:backend.main:scan done region=amazon links=2 in 3.052s
+INFO:backend.main:connection closed

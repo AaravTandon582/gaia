@@ -7,11 +7,34 @@ export type Discovery = {
   region: string; region_name: string; variable: string; label: string; domain: Domain;
   lat: number; lon: number; unit: string; flagged: boolean; reason: string;
   dates: string[]; values: number[]; source_file: string; dataset: string; source_bounds: number[];
-  trend_p: number; peak_anomaly_z: number; sen_slope?: number; inputsAvailable?: boolean; meanResidualMmPerMonth?: number;
+  trend_p: number; peak_anomaly_z: number; sen_slope?: number; changepoints?: string[]; inputsAvailable?: boolean; meanResidualMmPerMonth?: number;
 };
 export type StatusEvent = { type: "status"; agent: string; status: string; discovery_count?: number; message?: string };
-export type ScanResult = { type: "complete"; links: CausalLink[]; discoveries: Discovery[]; discovery_count: number; method: string; preprocessing: string; n_samples?: number; n_variables?: number; tau_max?: number; fdr_applied?: boolean };
+export type WaterBalance = { status: "inputs unavailable"; missing: string[] } | { status: "complete"; n_months: number; unit: string; mean_residual: number; mean_relative_error: number | null; interpretation: string };
+export type ScanResult = { type: "complete"; links: CausalLink[]; discoveries: Discovery[]; discovery_count: number; method: string; preprocessing: string; n_samples?: number; n_variables?: number; tau_max?: number; fdr_applied?: boolean; anomalies?: Anomalies; water_balance?: Record<string, WaterBalance> };
 export type ScanEvent = StatusEvent | ScanResult | { type: "error"; message: string };
+
+type AnomaliesComplete = {
+  status: "complete";
+  scope: "all_model_features";
+  retrospective: true;
+  feature_names: string[];
+  dates: string[];
+  reconstruction_error: number[];
+  is_anomaly: boolean[];
+  window_count: number[];
+  threshold: number;
+  training_error_mean: number;
+  training_error_std: number;
+  sequence_length: number;
+  interpretation: string;
+};
+type AnomaliesUnavailable = {
+  status: "unavailable";
+  scope?: "all_model_features";
+  reason: string;
+};
+export type Anomalies = AnomaliesComplete | AnomaliesUnavailable;
 
 export function apiUrl(path: string) {
   const base = process.env.NEXT_PUBLIC_API_URL || `${window.location.protocol}//${window.location.hostname}:8000`;

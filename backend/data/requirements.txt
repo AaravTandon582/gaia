@@ -1,0 +1,5 @@
+# Optional Earthdata download support. Cached scans do not require these packages.
+earthaccess>=0.19,<1
+xarray>=2025.4
+h5netcdf>=1.3
+h5py>=3.11

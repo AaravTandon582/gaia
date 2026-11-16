@@ -5,9 +5,28 @@ import asyncio
 import numpy as np
 from scipy.signal import detrend
 
+from ..analysis.changepoint import BOCPD
 from ..analysis.trend import analyze_trend
 from ..data.loader import REGIONS, VARIABLES, available_series, load_series
 from .cancellation import check_cancelled
+
+
+def changepoint_dates(adjusted, dates):
+    """Heuristic regime boundaries on standardized deseasonalized observations.
+
+    Keep the consecutive monthly grid validated by analyze_trend. Streaming
+    updates allow request cancellation without allocating a posterior matrix.
+    """
+    values = np.asarray(adjusted, dtype=float)
+    scale = float(values.std())
+    tolerance = 32 * np.finfo(float).eps * max(1., float(np.max(np.abs(values))))
+    if scale <= tolerance:
+        return []
+    detector = BOCPD()
+    for value in (values - values.mean()) / scale:
+        check_cancelled()
+        detector.update(value)
+    return [dates[index].strftime("%Y-%m-%d") for index in detector.changepoints]
 
 
 class ScoutAgent:
@@ -37,6 +56,7 @@ class ScoutAgent:
                 std = float(residual.std())
                 peak_z = float(np.max(np.abs(residual / std))) if std > 0 else 0.0
                 flagged = bool(trend["is_significant"] or peak_z >= 2.5)
+                changepoints = changepoint_dates(adjusted, series.index)
                 label, domain, unit = VARIABLES[variable]
                 discoveries.append(dict(
                     region=region, variable=variable, label=label, domain=domain,
@@ -44,6 +64,7 @@ class ScoutAgent:
                     region_name=location["name"], flagged=flagged,
                     trend_p=float(trend["mk_p"]), sen_slope=float(trend["sens_slope"]),
                     peak_anomaly_z=peak_z,
+                    changepoints=changepoints,
                     reason="Significant trend" if trend["is_significant"] else
                            "Monthly anomaly" if flagged else "No signal flagged",
                     dates=series.index.strftime("%Y-%m-%d").tolist(),

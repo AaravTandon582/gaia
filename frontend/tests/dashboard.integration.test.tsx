@@ -41,11 +41,13 @@ test("map click → real scouts → PCMCI → clickable graph and raw chart", as
   render(<Dashboard />);
   await screen.findByRole("button", { name: "Amazon Basin" });
   await clickMap(-5, -60);
-  await screen.findByText("Scan complete · 2 causal links", {}, { timeout: 15_000 });
+  await screen.findByText("Scan complete · 2 statistical associations", {}, { timeout: 15_000 });
   expect(screen.getByRole("region", { name: "Causal graph results" })).toBeTruthy();
   expect(document.querySelectorAll(".causal-link").length).toBe(2);
   expect(document.querySelectorAll(".causal-node").length).toBe(2);
   expect(screen.getByRole("img", { name: /monthly time series/ })).toBeTruthy();
+  expect(document.querySelectorAll("rect[data-anomaly-date]")).toHaveLength(19);
+  expect(screen.getByText("Combined-model anomaly")).toBeTruthy();
   const path = document.querySelector(".causal-link")!;
   fireEvent.click(path);
   expect(screen.getByRole("region", { name: "Selected statistical association" }).textContent).toContain("p-value");
@@ -62,11 +64,13 @@ test("bad date range reports API error and retry clears stale state", async () =
   expect(document.querySelectorAll(".causal-link").length).toBe(0);
   fireEvent.change(screen.getByLabelText("Start date"), { target: { value: "2000-01-01" } });
   fireEvent.click(screen.getByRole("button", { name: "Run scan" }));
-  await screen.findByText("Scan complete · 2 causal links", {}, { timeout: 15_000 });
+  await screen.findByText("Scan complete · 2 statistical associations", {}, { timeout: 15_000 });
   expect(screen.queryByRole("alert")).toBeNull();
   // Selecting another region must replace the graph, not append to it.
   fireEvent.click(screen.getByRole("button", { name: "Sahel" }));
-  await screen.findByText("Scan complete · 1 causal links", {}, { timeout: 15_000 });
+  await screen.findByText("Scan complete · 1 statistical association", {}, { timeout: 15_000 });
+  expect(screen.getByRole("heading", { name: "1 statistical association" })).toBeTruthy();
+  expect(document.querySelectorAll("rect[data-anomaly-date]")).toHaveLength(19);
   expect(document.querySelectorAll(".causal-link").length).toBe(1);
   expect(within(screen.getByRole("region", { name: "Causal graph results" })).queryByText(/Soil moisture/)).toBeNull();
 });
@@ -81,7 +85,7 @@ test("unsupported location does not invent data, cancellation permits a new scan
   fireEvent.click(screen.getByRole("button", { name: "Cancel scan" }));
   expect(screen.getByText("Scan cancelled")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Run scan" }));
-  await screen.findByText("Scan complete · 2 causal links", {}, { timeout: 15_000 });
+  await screen.findByText("Scan complete · 2 statistical associations", {}, { timeout: 15_000 });
   await act(async () => { await new Promise((resolve) => setTimeout(resolve, 50)); });
   expect(document.querySelectorAll(".causal-link").length).toBe(2);
 });

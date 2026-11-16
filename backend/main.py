@@ -14,7 +14,9 @@ from pydantic import BaseModel, Field, ValidationError, field_validator, model_v
 from .agents.orchestrator import OrchestratorAgent
 from .agents.cancellation import check_cancelled, scan_cancel_event
 from .agents.scout import default_scouts
-from .data.loader import region_catalog
+from .agents.anomalies import AnomalyAgent
+from .data.loader import DataLoader, region_catalog
+from .analysis.physics import region_water_balances
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -38,7 +40,7 @@ class ScanRequest(BaseModel):
         return self
 
 
-def create_app(scouts=(), *, series_loader=None, pc_alpha=0.2) -> FastAPI:
+def create_app(scouts=(), *, series_loader=None, pc_alpha=0.2, anomaly_agent=None) -> FastAPI:
     """Create an application with configured scouts and optional data retrieval."""
     app = FastAPI(title="GAIA")
     origins = os.getenv("GAIA_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
@@ -56,6 +58,10 @@ def create_app(scouts=(), *, series_loader=None, pc_alpha=0.2) -> FastAPI:
     async def regions():
         return {"regions": region_catalog(), "date_range": ["2000-01-01", "2025-12-31"],
                 "source": "Cached NASA Giovanni regional averages"}
+
+    @app.get("/variables")
+    async def variables():
+        return DataLoader().list_variables()
 
     @app.websocket("/ws/scan")
     async def scan(websocket: WebSocket):
@@ -106,12 +112,20 @@ def create_app(scouts=(), *, series_loader=None, pc_alpha=0.2) -> FastAPI:
                 await send_json({"type": "status", "agent": "orchestrator",
                                            "status": "causal_started"})
                 links = await asyncio.to_thread(orchestrator.run_causal_discovery, discoveries)
+                anomalies = {"status": "unavailable", "reason": "LSTM agent not configured"}
+                if anomaly_agent is not None:
+                    await send_json({"type": "status", "agent": "lstm", "status": "started"})
+                    anomalies = await asyncio.to_thread(anomaly_agent.run, request.date_range)
+                    await send_json({"type": "status", "agent": "lstm",
+                                     "status": "anomaly_" + anomalies["status"]})
                 # Avoid pandas/numpy objects on the wire. Preserve the original arrays
                 # and source metadata for the chart; never serialize PCMCI internals.
                 observations = [{key: value for key, value in item.items() if key != "timeseries"}
                                 for item in discoveries if "values" in item]
                 await send_json({"type": "complete", "discovery_count": len(discoveries),
                                            "links": links, "discoveries": observations,
+                                           "anomalies": anomalies,
+                                           "water_balance": region_water_balances(discoveries),
                                            **orchestrator.causal_metadata,
                                            "method": "PCMCI · ParCorr · lag 1–6 months · BH FDR q < 0.05",
                                            "preprocessing": "Monthly climatology removed, linearly detrended, standardized"})
@@ -168,4 +182,5 @@ def create_app(scouts=(), *, series_loader=None, pc_alpha=0.2) -> FastAPI:
     return app
 
 
-app = create_app(default_scouts(), pc_alpha=float(os.getenv("GAIA_PCMCI_PC_ALPHA", "0.2")))
+app = create_app(default_scouts(), pc_alpha=float(os.getenv("GAIA_PCMCI_PC_ALPHA", "0.2")),
+                 anomaly_agent=AnomalyAgent(os.getenv("GAIA_MODEL_PATH")))

@@ -1,0 +1,22 @@
+1
+00:00:00,000 --> 00:00:05,000
+GAIA: inspect changes in real NASA observations.
+
+2
+00:00:05,000 --> 00:00:11,000
+Select Amazon Basin. Domain scouts run live.
+
+3
+00:00:11,000 --> 00:00:17,000
+Inspect lag, corrected q, and transfer entropy.
+Statistical associations are not proof of causation.
+
+4
+00:00:17,000 --> 00:00:23,000
+Red bands show combined-model reconstruction anomalies.
+The model uses 12 features across five regions.
+
+5
+00:00:23,000 --> 00:00:30,000
+Repeat for Sahel. One association survives PCMCI FDR.
+Raw observations remain available for inspection.

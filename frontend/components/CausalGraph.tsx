@@ -23,7 +23,7 @@ export default function CausalGraph({ map, discoveries, links, selectedEdge, onE
     const nodes: Node[] = discoveries.filter((item) => ids.has(nodeId(item))).map((item) => ({ id: nodeId(item), item, homeX: 0, homeY: 0 }));
     const edges: Edge[] = links.map((link) => ({ source: link.cause, target: link.effect, link }));
     const svg = d3.select(map.getContainer()).append("svg")
-      .attr("class", "causal-graph-overlay").attr("aria-label", "Discovered causal graph")
+      .attr("class", "causal-graph-overlay").attr("aria-label", "Discovered statistical association graph")
       .style("position", "absolute").style("inset", "0").style("width", "100%")
       .style("height", "100%").style("pointer-events", "none").style("z-index", "450");
     svg.append("defs").append("marker").attr("id", "causal-arrow").attr("viewBox", "0 -5 10 10")

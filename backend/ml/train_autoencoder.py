@@ -118,12 +118,25 @@ def aggregate_scores(window_scores, n_months):
     return totals / counts, counts
 
 
-def score_all(model, windows, batch_size=32):
+def score_all(model, windows, batch_size=32, check_cancelled=lambda: None):
     model.eval()
     with torch.inference_mode():
-        scores = [model.anomaly_score(batch).cpu().numpy()
-                  for batch in torch.from_numpy(windows).split(batch_size)]
+        scores = []
+        for batch in torch.from_numpy(windows).split(batch_size):
+            check_cancelled()
+            scores.append(model.anomaly_score(batch).cpu().numpy())
+        check_cancelled()
     return np.concatenate(scores)
+
+
+def training_error_statistics(model, normalized_training, sequence_length=12):
+    """Calibrate on training-only windows, averaging overlaps per timestep."""
+    windows = make_windows(normalized_training, sequence_length)
+    scores, _ = aggregate_scores(score_all(model, windows), len(normalized_training))
+    if not np.isfinite(scores).all():
+        raise ValueError("Nonfinite training reconstruction errors")
+    return dict(training_error_mean=float(scores.mean()),
+                training_error_std=float(scores.std(ddof=0)))
 
 
 def run(cache_dir, output_dir, epochs=100):
@@ -208,6 +221,11 @@ def run(cache_dir, output_dir, epochs=100):
         reload_val_loss = loss_function(restored(val_tensor), val_tensor).item()
     if not np.isclose(reload_val_loss, best_loss, rtol=1e-6, atol=1e-8):
         raise RuntimeError("Reloaded checkpoint does not reproduce best validation loss")
+    training_stats = training_error_statistics(restored, reloaded_values[:split])
+    checkpoint.update(training_stats)
+    temporary = output_dir / "autoencoder.tmp"
+    torch.save(checkpoint, temporary)
+    temporary.replace(output_dir / "autoencoder.pt")
     window_scores = score_all(restored, reloaded_windows)
     scores, counts = aggregate_scores(window_scores, len(frame))
     if not np.isfinite(scores).all():
@@ -231,6 +249,8 @@ def run(cache_dir, output_dir, epochs=100):
         reloaded_validation_loss=reload_val_loss, device="cpu", torch_version=str(torch.__version__),
         pandas_version=pd.__version__, numpy_version=np.__version__,
         model_config=config, sources=provenance, skipped_csvs=skipped,
+        **training_stats,
+        anomaly_threshold=training_stats["training_error_mean"] + 2 * training_stats["training_error_std"],
         score_definition="Mean squared error across standardized features, averaged across overlapping windows",
         top_anomaly_months=[dict(date=row.date.strftime("%Y-%m"), score=row.anomaly_score)
                             for row in top.itertuples()],

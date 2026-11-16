@@ -17,7 +17,7 @@ export default function Home() {
         </h1>
         <p className="mt-6 max-w-xl text-lg leading-relaxed text-sky-100/75">
           Anomaly and trend discovery for the Earth system. Agents scan NASA
-          data, then reconstruct how those changes are causally linked.
+          data, then identify statistical associations between those changes.
         </p>
         <Link
           href="/dashboard"
